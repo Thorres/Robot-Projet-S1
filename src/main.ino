@@ -12,15 +12,15 @@ Date: 2018-09-27
 //Variables Globales
  float kP = 0.00085, kI = 0.00004;
  int test;
- #define opti45LEFT -275
- #define opti45RIGHT 50
- #define opti90LEFT -150
- #define opti90RIGHT 25
- #define opti180LEFT 225
- #define opti180RIGHT 100
+ #define opti45LEFT 50
+ #define opti45RIGHT 100
+ #define opti90LEFT 100
+ #define opti90RIGHT -75
+ #define opti180LEFT 0
+ #define opti180RIGHT 0
  #define opti45LEFT2 300
  #define opti45RIGHT2 200
- #define opti90LEFT2 200
+ #define opti90LEFT2 100
  #define opti90RIGHT2 400
  #define opti180LEFT2 300
  #define opti180RIGHT2 500
@@ -70,7 +70,7 @@ void loop()
      //virage D
      virage(90, RIGHT, opti90RIGHT);
      //D a E
-     AvancerCorriger(0.29);
+     AvancerCorriger(0.26);
      //virage E
      virage(90, LEFT, opti90LEFT);
      //E a F
@@ -82,7 +82,7 @@ void loop()
      //virage G
      virage(90, LEFT, opti90LEFT);
      //G a Ha
-     AvancerCorriger(0.54);
+     AvancerCorriger(0.50);
      //virage Ha
      virage(45, RIGHT, opti45RIGHT);
      //Ha a Hb
@@ -93,7 +93,7 @@ void loop()
      AvancerCorriger(0.64);
      //virage I
      virage2Moteurs(180, LEFT, opti180LEFT2);
-     /*//Retour
+     //Retour
      //I a Hb
      AvancerCorriger(0.64);
      //virage Hb
@@ -127,24 +127,19 @@ void loop()
      //virage B
      virage(90, RIGHT, 0);
      //B a A
-     AvancerCorrigerLONG(2.33);*/
+     AvancerCorrigerLONG(2.33);
 
 
   }
   if(AX_IsBumper(0/*LEFT*/)==1){
-    AvancerCorrigerLONG(2.5);
-    virage(180, LEFT, opti180LEFT);
-    AvancerCorrigerLONG(2.5);
+    virage(180, LEFT, 0);
   }
   if(AX_IsBumper(1)==1){
-    Serial.println(test);
-    test -= 50;
-    delay(100);
-    Serial.println(test);
+    virage(180, RIGHT, 0);
   }
   if(AX_IsBumper(2)==1){
     delay(100);
-    virage2Moteurs(180, LEFT, 300);
+    virage2Moteurs(180, LEFT, -1000);
   }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
   delay(10);// Delais pour décharger le CPU
@@ -163,7 +158,7 @@ void AvancerCorrigerLONG(float distance)
     /*Serial.print(" vg = ");
     Serial.print(VG);
     Serial.print(" vd = ");
-    Serial.println(VD);;*/
+    Serial.println(VD);*/
     delay(50);
 
     //Calcul des clics attendus (LEFT) et des clics reels (Droit)
@@ -328,7 +323,7 @@ void virage(float angle, int direction, int optimisation)
   if(direction == RIGHT)
   {
     Serial.println(distance);
-    while(ENCODER_Read(LEFT) < clicsAFaire - 100)
+    while(ENCODER_Read(LEFT) < clicsAFaire - optimisation)
     {
       MOTOR_SetSpeed(RIGHT, 0);
       MOTOR_SetSpeed(LEFT, 0.3);
@@ -336,7 +331,7 @@ void virage(float angle, int direction, int optimisation)
   }
   else
   {
-    while(ENCODER_Read(RIGHT) < clicsAFaire - 100)
+    while(ENCODER_Read(RIGHT) < clicsAFaire - optimisation)
     {
       MOTOR_SetSpeed(LEFT, 0);
       MOTOR_SetSpeed(RIGHT, 0.3);

@@ -42,7 +42,7 @@
 		
 	// Envoyer le code sur GitHub (envoie seulement  ce qui a été commit).
 	
-		--> git push -u origin "branch_name"
+		--> git push -u origin branch_name
 
 // Mettre à jour le code du projet en local.
 

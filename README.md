@@ -30,7 +30,7 @@
 		--> git commit -m "commit_name"
 		
 	// Envoyer le code sur GitHub (envoie seulement  ce qui a été commit).
-		--> git push -u origin "branch_name"
+		--> git push origin "branch_name"
 
 // Mettre à jour le code du projet en local.
 	// Vérifier s'il y a eu un changement sur GitHub. Si oui update la version locale de la branche.

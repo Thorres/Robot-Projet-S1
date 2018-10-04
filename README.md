@@ -20,7 +20,7 @@
 		
 	// Pour ajouter la branche à GitHub.
 	
-		--> git push origine "branch_name"
+		--> git push origin "branch_name"
 		
 	// Pour passer d'une branche à l'autre.
 	
@@ -28,7 +28,7 @@
 		
 	// Pour supprimer une branche.
 	
-		--> git push origine --delete "branch_name"
+		--> git push origin --delete "branch_name"
 
 // Pour cloner le projet.
 

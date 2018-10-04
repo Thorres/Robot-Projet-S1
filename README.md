@@ -16,23 +16,23 @@
 	
 	// Pour créer une branche.
 	
-		--> git checkout -b "branch_name"
+		--> git checkout -b branch_name
 		
 	// Pour ajouter la branche à GitHub.
 	
-		--> git push origin "branch_name"
+		--> git push origin branch_name
 		
 	// Pour passer d'une branche à l'autre.
 	
-		--> git checkout "branch_name"
+		--> git checkout branch_name
 		
 	// Pour supprimer une branche.
 	
-		--> git push origin --delete "branch_name"
+		--> git push origin --delete branch_name
 
 // Pour cloner le projet.
 
-	--> git clone "git_url"
+	--> git clone git_url
 
 // Mettre du code sur GitHub.
 	

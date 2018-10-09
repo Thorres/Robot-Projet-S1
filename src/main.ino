@@ -11,24 +11,35 @@ Date: 2018-09-27
 
 //Variables Globales
  float kP = 0.00085, kI = 0.00004;
- int gauche = 0, droite = 1;
- int test = 0;
- //OPTIMISATION DES VIRAGES
- /* virage:
-  - 45 gauche :
-  - 45 droite : 
-  - 90 gauche :
-  - 90 droite :
-  - 180 gauche :
-  - 180 droite :
+ int test;
+ #define opti45LEFT -275
+ #define opti45RIGHT 50
+ #define opti90LEFT -150
+ #define opti90RIGHT 25
+ #define opti180LEFT 225
+ #define opti180RIGHT 100
+ #define opti45LEFT2 300
+ #define opti45RIGHT2 200
+ #define opti90LEFT2 200
+ #define opti90RIGHT2 400
+ #define opti180LEFT2 300
+ #define opti180RIGHT2 500
+ //OPTIMISATION DES virage2moteursS
+ /* virage2moteurs:
+  - 45 LEFT : -275
+  - 45 RIGHT : 50
+  - 90 LEFT : 0
+  - 90 RIGHT : 25
+  - 180 LEFT : 225
+  - 180 RIGHT : 100
   --------------------------------------------------------------------
-  virage2Moteurs
-  - 45 gauche :
-  - 45 droite : 
-  - 90 gauche :
-  - 90 droite :
-  - 180 gauche :
-  - 180 droite :
+  virage2moteurs2Moteurs
+  - 45 LEFT : 300
+  - 45 RIGHT : 200
+  - 90 LEFT : 200
+  - 90 RIGHT : 400
+  - 180 LEFT : 300
+  - 180 RIGHT : 500
 
  */
 /* ******************************************************************  SETUP  ************************************************** */
@@ -36,80 +47,104 @@ void setup()
 {
   BoardInit();
   Serial.println("Hello");
-  delay(2000);
+  delay(500);
+  test = 0;
   Serial.println("GO!");
 }
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
 {
   
-  if(AX_IsBumper(3)==1){
+  if(ROBUS_IsBumper(3)==1){
     //Aller
     //distance A
-     AvancerCorrigerLONG(2.33);
-     //virage B
-     virage(90, gauche);
+     AvancerCorrigerLONG(2.20);
+     //virage2moteurs B
+     virage2moteurs(90, LEFT, opti90LEFT2);
      //B a C
-     AvancerCorriger(0.31);
-     //virage C
-     virage(90, droite);
+     AvancerCorriger(0.395);
+     //virage2moteurs C
+     virage2moteurs(90, RIGHT, opti90RIGHT2);
      //C a D
-     AvancerCorriger(0.23);
-     //virage D
-     virage(92, droite);
+     AvancerCorriger(0.325);
+     //virage2moteurs D
+     virage2moteurs(90, RIGHT, opti90RIGHT2);
      //D a E
-     AvancerCorriger(0.29);
-     //virage E
-     virage(90, gauche);
+     AvancerCorriger(0.425);
+     //virage2moteurs E
+     virage2moteurs(90, LEFT, opti90LEFT2);
      //E a F
-     AvancerCorriger(0.13);
-     //virage F
-     virage(45, droite);
+     AvancerCorriger(0.225);
+     //virage2moteurs F
+     virage2moteurs(45, RIGHT, opti45RIGHT2);
      //F a G
-     AvancerCorriger(0.37);
-     //virage G
-     virage(89, gauche);
+     AvancerCorriger(0.465);
+     //virage2moteurs G
+     virage2moteurs(90, LEFT, opti90LEFT2);
      //G a Ha
-     AvancerCorriger(0.54);
-     //virage Ha
-     virage(49.5, droite);
+     AvancerCorriger(0.625);
+     //virage2moteurs Ha
+     virage2moteurs(45, RIGHT, opti45RIGHT2);
      //Ha a Hb
-     AvancerCorriger(0.32);
-     //virage Hb
-     virage(21.5, droite);
+     AvancerCorriger(0.415);
+     //virage2moteurs Hb
+     virage2moteurs(21.5, RIGHT, 0);
      //Hb a I
-     AvancerCorriger(0.64);
-     //virage I
-     virage2Moteurs(194, gauche, 150);
+     AvancerCorriger(0.735);
+     //virage2moteurs I
+     virage2moteurs(185, LEFT, opti180LEFT2);
      //Retour
-     /*AvancerCorriger(0.76);
-     virage(12.5, gauche);
-     AvancerCorriger(0.32);
-     virage(45, gauche);
-     AvancerCorriger(0.73);
-     virage(90, droite);
-     AvancerCorriger(0.28);
-     virage(45, gauche);
-     AvancerCorriger(0.13);
-     virage(90, droite);
-     AvancerCorriger(0.26);
-     virage(90, gauche);
-     AvancerCorriger(0.26);
-     virage(90, gauche);
-     AvancerCorriger(0.26);
-     virage(90, droite);
-     AvancerCorrigerLONG(2.13);*/
+     //I a Hb
+     AvancerCorriger(0.735);
+     //virage2moteurs Hb
+     virage2moteurs(21.5, LEFT, 0);
+     //Hb a Ha
+     AvancerCorriger(0.415);
+     //virage2moteurs Ha
+     virage2moteurs(45, LEFT, opti45LEFT2);
+     //H a Ga
+     AvancerCorriger(0.65);
+     //virage2moteurs G
+     virage2moteurs(90, RIGHT, opti90RIGHT2);
+     //G a F
+     AvancerCorriger(0.465);
+     //virage2moteurs F
+     virage2moteurs(45, LEFT, opti45LEFT2);
+     //F a E
+     AvancerCorriger(0.225);
+     //virage2moteurs E
+     virage2moteurs(90, RIGHT, opti90RIGHT2);
+     //E a D
+     AvancerCorriger(0.425);
+     //virage2moteurs D
+     virage2moteurs(92, LEFT,0);
+     //D a C
+     AvancerCorriger(0.360);
+     //virage2moteurs C
+     virage2moteurs(90, LEFT, opti90LEFT2);
+     //C a B
+     AvancerCorriger(0.470);
+     //virage2moteurs B
+     virage2moteurs(87, RIGHT, 0);
+     //B a A
+     AvancerCorrigerLONG(2.20);
 
 
   }
-   if(AX_IsBumper(2)==1){
-    virage2Moteurs(45, droite, test);
+  if(ROBUS_IsBumper(0/*LEFT*/)==1){
+    AvancerCorrigerLONG(2.5);
+    virage2moteurs(180, LEFT, opti180LEFT);
+    AvancerCorrigerLONG(2.5);
   }
-    if(AX_IsBumper(0/*gauche*/)==1){
-     test += 100;
+  if(ROBUS_IsBumper(1)==1){
+    Serial.println(test);
+    test -= 50;
+    delay(100);
+    Serial.println(test);
   }
-    if(AX_IsBumper(1)==1){
-     test -= 100;
+  if(ROBUS_IsBumper(2)==1){
+    delay(100);
+    virage2moteurs(180, LEFT, 300);
   }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
   delay(10);// Delais pour décharger le CPU
@@ -121,7 +156,7 @@ void AvancerCorrigerLONG(float distance)
   float VG = 0.01;
   float VD = 0.01;
   long int comptClicsATTG = 0, comptClicsREELD = 0;
-  while (comptClicsATTG < MetresToClics(distance) - 5000)
+  while (comptClicsATTG < (MetresToClics(distance) - 6400))
   {
     MOTOR_SetSpeed(LEFT, VG);
     MOTOR_SetSpeed(RIGHT, VD);
@@ -131,7 +166,7 @@ void AvancerCorrigerLONG(float distance)
     Serial.println(VD);;*/
     delay(50);
 
-    //Calcul des clics attendus (Gauche) et des clics reels (Droit)
+    //Calcul des clics attendus (LEFT) et des clics reels (Droit)
     float leftClic = ENCODER_Read(LEFT);
     float rightClic = ENCODER_Read(RIGHT);
     comptClicsATTG += leftClic;
@@ -146,37 +181,43 @@ void AvancerCorrigerLONG(float distance)
     //Serial.println(comptClicsATTG);
 
     RenitClics ();
-    if (VG < 0.7)
+    if (VG < 0.8)
     {
       VG += 0.03;
       VD += 0.03;
     }
   }
-  MOTOR_SetSpeed(LEFT, VG);
-  MOTOR_SetSpeed(RIGHT, VG);
+  Serial.println(comptClicsATTG);
   int clicsRalen = 0;
-  while(clicsRalen <= 5000)
+  int l = 0;
+  comptClicsATTG = 0;
+  comptClicsREELD = 0;
+  while(comptClicsATTG <= 6400)
   {
-    Serial.println("While");
-    int leftClic = ENCODER_Read(LEFT);
-    clicsRalen += leftClic;
+    float leftClic = ENCODER_Read(LEFT);
+    float rightClic = ENCODER_Read(RIGHT);
+    comptClicsATTG += leftClic;
+    comptClicsREELD += rightClic;
 
-    MOTOR_SetSpeed(LEFT, VG);
-    MOTOR_SetSpeed(RIGHT, VD);
-    delay(25);
+    VD = AjustTrajec(VD, comptClicsATTG, comptClicsREELD);
 
-    if (VG > 0.1)
+    RenitClics();
+
+    if (VG > 0.25)
     {
       VG -= 0.05;
       VD -= 0.05;
+      MOTOR_SetSpeed(LEFT, VG);
+      MOTOR_SetSpeed(RIGHT, VD);
     }
-
-    Serial.print(VD);
-    Serial.print(VG);
+    delay(100);
+    Serial.print("Vitesse moteur : ");
+    Serial.println(VG);
   }
   ReinitMoteurs();
   comptClicsATTG = 0;
   comptClicsREELD = 0;
+  delay(10);
 }
 
 void AvancerCorriger(float distance)
@@ -194,7 +235,7 @@ void AvancerCorriger(float distance)
     Serial.println(VD);;*/
     delay(50);
 
-    //Calcul des clics attendus (Gauche) et des clics reels (Droit)
+    //Calcul des clics attendus (LEFT) et des clics reels (Droit)
     float leftClic = ENCODER_Read(LEFT);
     float rightClic = ENCODER_Read(RIGHT);
     comptClicsATTG += leftClic;
@@ -209,7 +250,7 @@ void AvancerCorriger(float distance)
     //Serial.println(comptClicsATTG);
 
     RenitClics ();
-    if (VG < 0.3)
+    if (VG < 0.5)
     {
       VG += 0.03;
       VD += 0.03;
@@ -218,6 +259,7 @@ void AvancerCorriger(float distance)
   ReinitMoteurs();
   comptClicsATTG = 0;
   comptClicsREELD = 0;
+  delay(100);
 }
 
 void ReinitMoteurs()
@@ -269,7 +311,7 @@ long int MetresToClics(float distance)
   return distClics;
 }
 
-void virage(float angle, int direction)
+void virage(float angle, int direction, int optimisation)
 {
   /*transformation de l'angle en distance d'arc de cercle
   distance = proportion de l'angle sur 360 * circonférence
@@ -283,27 +325,27 @@ void virage(float angle, int direction)
   Serial.println(distance);
   clicsAFaire = MetresToClics(distance);
   
-  if(direction == droite)
+  if(direction == RIGHT)
   {
     Serial.println(distance);
-    while(ENCODER_Read(LEFT) < clicsAFaire - 100)
+    while(ENCODER_Read(LEFT) < clicsAFaire - optimisation)
     {
-      MOTOR_SetSpeed(1, 0);
-      MOTOR_SetSpeed(0, 0.2);
+      MOTOR_SetSpeed(RIGHT, 0);
+      MOTOR_SetSpeed(LEFT, 0.3);
     }
   }
   else
   {
-    while(ENCODER_Read(RIGHT) < clicsAFaire - 100)
+    while(ENCODER_Read(RIGHT) < clicsAFaire - optimisation)
     {
-      MOTOR_SetSpeed(0, 0);
-      MOTOR_SetSpeed(1, 0.2);
+      MOTOR_SetSpeed(LEFT, 0);
+      MOTOR_SetSpeed(RIGHT, 0.3);
     }
   }
   ReinitMoteurs();
 }
 
-void virage2Moteurs(int angle, int direction, int optimisation)
+void virage2moteurs(int angle, int direction, int optimisation)
 {
   RenitClics();
   
@@ -323,20 +365,20 @@ void virage2Moteurs(int angle, int direction, int optimisation)
   Serial.println("------------");
   clicsAFaire = MetresToClics(distance);
   
-  if(direction == droite)
+  if(direction == RIGHT)
   {
-    while(ENCODER_Read(LEFT) < (clicsAFaire - optimisation)/2)
+    while(ENCODER_Read(LEFT) < (clicsAFaire - (optimisation/2))/2)
     {
-      MOTOR_SetSpeed(1, -0.2);
-      MOTOR_SetSpeed(0, 0.2);
+      MOTOR_SetSpeed(RIGHT, -0.3);
+      MOTOR_SetSpeed(LEFT, 0.3);
     }
   }
   else
   {
-    while(ENCODER_Read(RIGHT) < (clicsAFaire - optimisation)/2)
+    while(ENCODER_Read(RIGHT) < (clicsAFaire - (optimisation/2))/2)
     {
-      MOTOR_SetSpeed(0, -0.2);
-      MOTOR_SetSpeed(1, 0.2);
+      MOTOR_SetSpeed(LEFT, -0.3);
+      MOTOR_SetSpeed(RIGHT, 0.3);
     }
   }
   ReinitMoteurs();

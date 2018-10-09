@@ -1,9 +1,13 @@
 {
+    "name": "Adafruit INA219", 
+    "version": "1.0.3", 
+    "keywords": [
+        "sensors"
+    ], 
     "description": "INA219 Current Sensor", 
-    "repository": {
-        "url": "https://github.com/adafruit/Adafruit_INA219", 
-        "type": "git"
-    }, 
+    "frameworks": [
+        "arduino"
+    ], 
     "platforms": [
         "atmelavr", 
         "atmelsam", 
@@ -17,7 +21,21 @@
         "teensy", 
         "timsp430"
     ], 
+    "authors": [
+        {
+            "email": "info@adafruit.com", 
+            "url": null, 
+            "maintainer": true, 
+            "name": "Adafruit"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/adafruit/Adafruit_INA219"
+    }, 
+    "homepage": null, 
     "export": {
+        "include": null, 
         "exclude": [
             "extras", 
             "docs", 
@@ -25,25 +43,7 @@
             "test", 
             "*.doxyfile", 
             "*.pdf"
-        ], 
-        "include": null
+        ]
     }, 
-    "authors": [
-        {
-            "maintainer": true, 
-            "name": "Adafruit", 
-            "url": null, 
-            "email": "info@adafruit.com"
-        }
-    ], 
-    "keywords": [
-        "sensors"
-    ], 
-    "id": 160, 
-    "name": "Adafruit INA219", 
-    "frameworks": [
-        "arduino"
-    ], 
-    "version": "1.0.3", 
-    "homepage": null
+    "id": 160
 }

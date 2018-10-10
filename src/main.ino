@@ -12,36 +12,12 @@ Date: 2018-09-27
 //Variables Globales
  float kP = 0.00085, kI = 0.00004;
  int test;
- #define opti45LEFT -250
- #define opti45RIGHT 50
- #define opti90LEFT -150
- #define opti90RIGHT 25
- #define opti180LEFT 225
- #define opti180RIGHT 100
  #define opti45LEFT2 175
- #define opti45RIGHT2 125
- #define opti90LEFT2 425
+ #define opti45RIGHT2 100
+ #define opti90LEFT2 400
  #define opti90RIGHT2 225
  #define opti180LEFT2 300
  #define opti180RIGHT2 500
- //OPTIMISATION DES virage2moteursS
- /* virage2moteurs:
-  - 45 LEFT : -275
-  - 45 RIGHT : 50
-  - 90 LEFT : 0
-  - 90 RIGHT : 25
-  - 180 LEFT : 225
-  - 180 RIGHT : 100
-  --------------------------------------------------------------------
-  virage2moteurs2Moteurs
-  - 45 LEFT : 300
-  - 45 RIGHT : 200
-  - 90 LEFT : 200
-  - 90 RIGHT : 400
-  - 180 LEFT : 300
-  - 180 RIGHT : 500
-
- */
 /* ******************************************************************  SETUP  ************************************************** */
 void setup()
 {
@@ -56,7 +32,7 @@ void loop()
 {
   if(ROBUS_IsBumper(0/*LEFT*/)==1){
     for( int i = 0; i != 4; i++){
-      virage2moteurs (45, RIGHT, 100);
+      virage2moteurs (180, RIGHT, 485);
       delay(1000);
     }
   }

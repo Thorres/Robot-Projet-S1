@@ -1,5 +1,5 @@
 /*
-Projet: Déplacement Robot B Défi parcours
+Projet: Déplacement Robot A Défi parcours
 Equipe: P-10
 Auteurs: Simon Torres, 
 Description: Permet de compléter le défi du parcours
@@ -14,8 +14,8 @@ Date: 2018-09-27
  int test;
  #define opti45LEFT2 175
  #define opti45RIGHT2 100
- #define opti90LEFT2 400
- #define opti90RIGHT2 225
+ #define opti90LEFT2 417
+ #define opti90RIGHT2 237
  #define opti180LEFT2 300
  #define opti180RIGHT2 500
 /* ******************************************************************  SETUP  ************************************************** */
@@ -31,85 +31,7 @@ void setup()
 void loop() 
 {
   if(ROBUS_IsBumper(0/*LEFT*/)==1){
-    for( int i = 0; i != 4; i++){
-      virage2moteurs (180, RIGHT, 485);
-      delay(1000);
-    }
-  }
-  if(ROBUS_IsBumper(3)==1){
-    //Aller
-    //distance A
-     AvancerCorrigerLONG(2.13);
-     //virage2moteurs B
-     virage2moteurs(90, LEFT, opti90LEFT2);
-     //B a C
-     AvancerCorriger(0.430);
-     //virage2moteurs C
-     virage2moteurs(90, RIGHT, opti90RIGHT2);
-     //C a D
-     AvancerCorriger(0.395);
-     //virage2moteurs D
-     virage2moteurs(90, RIGHT, opti90RIGHT2);
-     //D a E
-     AvancerCorriger(0.385);
-     //virage2moteurs E
-     virage2moteurs(90, LEFT, opti90LEFT2);
-     //E a F
-     AvancerCorriger(0.305);
-     //virage2moteurs F
-     virage2moteurs(45, RIGHT, opti45RIGHT2);
-     //F a G
-     AvancerCorriger(0.525);
-     //virage2moteurs G
-     virage2moteurs(90, LEFT, opti90LEFT2);
-     //G a Ha
-     AvancerCorriger(0.830);
-     //virage2moteurs Ha
-     virage2moteurs(45, RIGHT, opti45RIGHT2);
-     //Ha a Hb
-     AvancerCorriger(0.345);
-     //virage2moteurs Hb
-     virage2moteurs(12, RIGHT, 0);
-     //Hb a I
-     AvancerCorriger(0.735);
-     //virage2moteurs I
-     virage2moteurs(180, RIGHT, opti180RIGHT2);
-     //Retour
-     //I a Hb
-     AvancerCorriger(0.705);
-     //virage2moteurs Hb
-     virage2moteurs(10, LEFT, 0);
-     //Hb a Ha
-     AvancerCorriger(0.575);
-     //virage2moteurs Ha
-     virage2moteurs(45, LEFT, opti45LEFT2);
-     //H a Ga
-     AvancerCorriger(0.615);
-     //virage2moteurs G
-     virage2moteurs(90, RIGHT, opti90RIGHT2);
-     //G a F
-     AvancerCorriger(0.465);
-     //virage2moteurs F
-     virage2moteurs(45, LEFT, opti45LEFT2);
-     //F a E
-     AvancerCorriger(0.315);
-     //virage2moteurs E
-     virage2moteurs(90, RIGHT, opti90RIGHT2);
-     //E a D
-     AvancerCorriger(0.455);
-     //virage2moteurs D
-     virage2moteurs(90, LEFT, opti45LEFT2);
-     //D a C
-     AvancerCorriger(0.395);
-     //virage2moteurs C
-     virage2moteurs(90, LEFT, opti90LEFT2);
-     //C a B
-     AvancerCorriger(0.475);
-     //virage2moteurs B
-     virage2moteurs(90, RIGHT, opti90RIGHT2);
-     //B a A
-     AvancerCorrigerLONG(2.33);
-
+    AvancerCorriger(2);
 
   }
   if(ROBUS_IsBumper(1)==1){
@@ -127,35 +49,28 @@ void loop()
 }
 
 /* ******************************************************************FONCTIONS PERSONNELLES************************************************** */
-void AvancerCorrigerLONG(float distance)
+void AvancerCorriger(float distance)
 {
   float VG = 0.01;
   float VD = 0.01;
   long int comptClicsATTG = 0, comptClicsREELD = 0;
-  while (comptClicsATTG < (MetresToClics(distance) - 6400))
+  /*Acceleration jusqu'a vitesse max pour 90% de la distance a faire*/
+  while (comptClicsATTG < (MetresToClics((0.9 * distance))))
   {
     MOTOR_SetSpeed(LEFT, VG);
     MOTOR_SetSpeed(RIGHT, VD);
-    /*Serial.print(" vg = ");
-    Serial.print(VG);
-    Serial.print(" vd = ");
-    Serial.println(VD);;*/
     delay(50);
 
-    //Calcul des clics attendus (LEFT) et des clics reels (Droit)
+    //Compteur de clics 
     float leftClic = ENCODER_Read(LEFT);
     float rightClic = ENCODER_Read(RIGHT);
     comptClicsATTG += leftClic;
     comptClicsREELD += rightClic;
-    /*Serial.print("Compteur clics attendus : ");
-    Serial.println(comptClicsATTG);
-    Serial.print("Compteur clics réels : ");
-    Serial.println(comptClicsREELD);*/
 
+    //Ajustement de la trajectoire avec le PID
     VD = AjustTrajec(VD,comptClicsATTG, comptClicsREELD);
 
-    //Serial.println(comptClicsATTG);
-
+    //Acceleration progressive
     RenitClics ();
     if (VG < 0.9)
     {
@@ -163,22 +78,27 @@ void AvancerCorrigerLONG(float distance)
       VD += 0.03;
     }
   }
-  Serial.println(comptClicsATTG);
+
   int clicsRalen = 0;
   int l = 0;
   comptClicsATTG = 0;
   comptClicsREELD = 0;
-  while(comptClicsATTG <= 6400)
+
+  //Ralentissement progressif jusqu'a ce qu'il ai fait les 10% restants de la distance
+  while(comptClicsATTG <= MetresToClics((0.1 * distance)))
   {
+    //Compteur de clics
     float leftClic = ENCODER_Read(LEFT);
     float rightClic = ENCODER_Read(RIGHT);
     comptClicsATTG += leftClic;
     comptClicsREELD += rightClic;
 
+    //Ajustement de la trajectoire avec le PID
     VD = AjustTrajec(VD, comptClicsATTG, comptClicsREELD);
 
     RenitClics();
 
+    //Ralentissement progressif
     if (VG > 0.25)
     {
       VG -= 0.05;
@@ -186,80 +106,14 @@ void AvancerCorrigerLONG(float distance)
       MOTOR_SetSpeed(LEFT, VG);
       MOTOR_SetSpeed(RIGHT, VD);
     }
-    delay(50);
-    Serial.print("Vitesse moteur : ");
-    Serial.println(VG);
+    delay(75);
   }
   ReinitMoteurs();
   comptClicsATTG = 0;
   comptClicsREELD = 0;
 }
 
-void AvancerCorriger(float distance)
-{
-  float VG = 0.01;
-  float VD = 0.01;
-  long int comptClicsATTG = 0, comptClicsREELD = 0;
-  while (comptClicsATTG < MetresToClics(distance) - 1500)
-  {
-    MOTOR_SetSpeed(LEFT, VG);
-    MOTOR_SetSpeed(RIGHT, VD);
-    /*Serial.print(" vg = ");
-    Serial.print(VG);
-    Serial.print(" vd = ");
-    Serial.println(VD);;*/
-    delay(50);
-
-    //Calcul des clics attendus (LEFT) et des clics reels (Droit)
-    float leftClic = ENCODER_Read(LEFT);
-    float rightClic = ENCODER_Read(RIGHT);
-    comptClicsATTG += leftClic;
-    comptClicsREELD += rightClic;
-    /*Serial.print("Compteur clics attendus : ");
-    Serial.println(comptClicsATTG);
-    Serial.print("Compteur clics réels : ");
-    Serial.println(comptClicsREELD);*/
-
-    VD = AjustTrajec(VD,comptClicsATTG, comptClicsREELD);
-
-    //Serial.println(comptClicsATTG);
-
-    RenitClics ();
-    if (VG < 0.4)
-    {
-      VG += 0.03;
-      VD += 0.03;
-    }
-  }
-  int clicsRalen = 0;
-  int l = 0;
-  comptClicsATTG = 0;
-  comptClicsREELD = 0;
-  while(comptClicsATTG <= 1500)
-  {
-    float leftClic = ENCODER_Read(LEFT);
-    float rightClic = ENCODER_Read(RIGHT);
-    comptClicsATTG += leftClic;
-    comptClicsREELD += rightClic;
-
-    VD = AjustTrajec(VD, comptClicsATTG, comptClicsREELD);
-
-    RenitClics();
-
-    if (VG > 0.1)
-    {
-      VG -= 0.05;
-      VD -= 0.05;
-      MOTOR_SetSpeed(LEFT, VG);
-      MOTOR_SetSpeed(RIGHT, VD);
-    }
-    delay(100);
-  }
-  ReinitMoteurs();
-  comptClicsATTG = 0;
-  comptClicsREELD = 0;
-}
-
+//Reinitialisation des moteurs et des clics
 void ReinitMoteurs()
 {
   MOTOR_SetSpeed(LEFT, 0.0);
@@ -268,12 +122,14 @@ void ReinitMoteurs()
   ENCODER_ReadReset(RIGHT);
 }
 
+//Réinitialisation des clics
 void RenitClics () 
 {
   ENCODER_ReadReset(LEFT);
   ENCODER_ReadReset(RIGHT);
 }
 
+//Ajustement du trajet avec le PID
 float AjustTrajec(float vintD, long int comptATT, long int comptREEL) 
 {
  
@@ -282,17 +138,9 @@ float AjustTrajec(float vintD, long int comptATT, long int comptREEL)
   float modifMoteur = 0, diffPond = 0;
   float diffInt = 0;
 
-  //if(vintD = 0.01)
-
   diffInt += ((comptATT - comptREEL) * kI);
-  /*Serial.print("Diffint : ");
-  Serial.println(diffInt);*/
   diffPond = (leftClic - rightClic) * kP;
-  /*Serial.print("Diffpond : ");
-  Serial.println(diffPond);*/
   modifMoteur = diffPond + diffInt + vintD;
-  /*Serial.println(modifMoteur);
-  Serial.println("---------------------------------");*/
   RenitClics();
 
   return modifMoteur;
@@ -309,74 +157,36 @@ long int MetresToClics(float distance)
   return distClics;
 }
 
-void virage(float angle, int direction, int optimisation)
-{
-  /*transformation de l'angle en distance d'arc de cercle
-  distance = proportion de l'angle sur 360 * circonférence
-  rayon de courbure du cercle := distance entre les ReinitMoteurs*/
-  RenitClics();
-  
-  int rayon = 19/*(cm)*/, clicsAFaire = 0;
-  double distance = 0;
-  
-  distance/*m*/ = ((angle / 360) * 2 * PI * rayon)/100;
-  Serial.println(distance);
-  clicsAFaire = MetresToClics(distance);
-  
-  if(direction == RIGHT)
-  {
-    Serial.println(distance);
-    while(ENCODER_Read(LEFT) < clicsAFaire - optimisation)
-    {
-      MOTOR_SetSpeed(RIGHT, 0);
-      MOTOR_SetSpeed(LEFT, 0.3);
-    }
-  }
-  else
-  {
-    while(ENCODER_Read(RIGHT) < clicsAFaire - optimisation)
-    {
-      MOTOR_SetSpeed(LEFT, 0);
-      MOTOR_SetSpeed(RIGHT, 0.3);
-    }
-  }
-  ReinitMoteurs();
-}
-
-void virage2moteurs(int angle, int direction, int optimisation)
+void virage2moteurs(double angle, int direction, int optimisation)
 {
   RenitClics();
   
   int rayon = 9.5, clicsAFaire = 0;
   double distance = 0;
   
-  distance/*m*/ = angle;
-  distance = distance / 360;
-  distance = distance * 2 * PI;
-  distance = distance * rayon / 100;
+  distance/*m*/ = ((angle / 360) * 2 * PI * rayon)/100;
   clicsAFaire = MetresToClics(distance);
-  Serial.println(clicsAFaire);
   
   if(direction == RIGHT)
   {
     float VG = 0.2;
     float VD = -0.2;
     long int comptClicsATTG = 0, comptClicsREELD = 0;
-    while(comptClicsATTG < ((clicsAFaire-optimisation)))
+
+    while(comptClicsATTG < ((clicsAFaire - optimisation / 2)))
     {
-      Serial.println("salut");
       MOTOR_SetSpeed(RIGHT, VD);
       MOTOR_SetSpeed(LEFT, VG);
 
       delay(10);
 
+      //Compteur de clics
       float leftClic = ENCODER_Read(LEFT);
       float rightClic = ENCODER_Read(RIGHT);
       comptClicsATTG += leftClic;
       comptClicsREELD += rightClic;
-      Serial.println(comptClicsREELD);
-      Serial.println(comptClicsATTG);
 
+      //Ajustement de la trajectoire avec le PID
       VD = -(AjustTrajecViragesD(-VD, comptClicsATTG, comptClicsREELD));
     }
     ReinitMoteurs();
@@ -386,7 +196,7 @@ void virage2moteurs(int angle, int direction, int optimisation)
     float VG = -0.2;
     float VD = 0.2;
     long int comptClicsATTG = 0, comptClicsREELD = 0;
-    while(comptClicsATTG > -(clicsAFaire - (optimisation/2)))
+    while(comptClicsATTG > -(clicsAFaire))
     {
       MOTOR_SetSpeed(LEFT, VG);
       MOTOR_SetSpeed(RIGHT, VD);
@@ -397,8 +207,6 @@ void virage2moteurs(int angle, int direction, int optimisation)
       float rightClic = ENCODER_Read(RIGHT);
       comptClicsATTG += leftClic;
       comptClicsREELD += rightClic;
-      Serial.println(comptClicsREELD);
-      Serial.println(comptClicsATTG);
 
       VD = AjustTrajecViragesG(VD, -comptClicsATTG, -comptClicsREELD);
     }
@@ -408,23 +216,14 @@ void virage2moteurs(int angle, int direction, int optimisation)
 
 float AjustTrajecViragesD(float vintD, long int comptATT, long int comptREEL) 
 {
- 
   float leftClic = ENCODER_Read(LEFT);
   float rightClic = ENCODER_Read(RIGHT);
   float modifMoteur = 0, diffPond = 0;
   float diffInt = 0;
 
-  //if(vintD = 0.01)
-
   diffInt += ((comptATT - (-comptREEL)) * kI);
-  /*Serial.print("Clics moteurs droit : ");
-  Serial.println(comptATT);*/
   diffPond = (leftClic - (-rightClic)) * kP;
-  /*Serial.print("Diffpond : ");
-  Serial.println(diffPond);*/
   modifMoteur =(diffPond + diffInt + vintD);
-  /*Serial.println(modifMoteur);
-  Serial.println("---------------------------------");*/
   RenitClics();
 
   return modifMoteur;
@@ -438,19 +237,11 @@ float AjustTrajecViragesG(float vintD, long int comptATT, long int comptREEL)
   float modifMoteur = 0, diffPond = 0;
   float diffInt = 0;
 
-  //if(vintD = 0.01)
-
   diffInt += ((comptATT - (-comptREEL)) * kI);
-  /*Serial.print("Clics moteurs droit : ");
-  Serial.println(comptATT);*/
   diffPond = (-leftClic - rightClic) * kP;
-  /*Serial.print("Diffpond : ");
-  Serial.println(diffPond);*/
   modifMoteur =(diffPond + diffInt + vintD);
-  /*Serial.println(modifMoteur);
-  Serial.println("---------------------------------");*/
+  
   RenitClics();
 
   return modifMoteur;
 }
-

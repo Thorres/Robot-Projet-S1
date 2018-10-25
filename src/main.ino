@@ -22,27 +22,33 @@ Date: 2018-09-27
 void setup()
 {
   BoardInit();
-  Serial.println("Hello");
+  //scan de la couleur sous le robot et l'assigner a la variable maCouleur
+
   delay(500);
-  test = 0;
   Serial.println("GO!");
 }
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
 {
-  if(ROBUS_IsBumper(0/*LEFT*/)==1){
-    AvancerCorriger(2);
+  /*Bumpers : Gauche = 0, Droit = 1, Avant = 2, Arriere = 3*/
+  while(ROBUS_IsBumper(2)==1){
+    //Ramasser le ballon lorsque le bumber avant est appuye
+    ActivationServo();
+    SERVO_SetAngle(0, 90);
+    SERVO_SetAngle(1, 90);
+    
+    //Le robot se déplace jusqu'a rencontrer une couleur adverse
+    while(/*Couleur == blanc ou maCouleur*/ ){
+      //Appel de la fonction suiveur de ligne
+    }
 
-  }
-  if(ROBUS_IsBumper(1)==1){
-    Serial.println(test);
-    test -= 50;
-    delay(100);
-    Serial.println(test);
-  }
-  if(ROBUS_IsBumper(2)==1){
-    delay(100);
-    virage2moteurs(180, LEFT, 300);
+    //Le robot depose  le ballon lorsqu'il passe sur une couleur adverse ou du noir
+    SERVO_SetAngle(0, 0);
+    SERVO_SetAngle(1, 0);
+    DesactivationServo();
+    AvancerCorriger(0.3);
+    virage2moteurs(180, RIGHT, opti180RIGHT2);
+    AvancerCorriger(0.3);
   }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
   delay(10);// Delais pour décharger le CPU
@@ -244,4 +250,14 @@ float AjustTrajecViragesG(float vintD, long int comptATT, long int comptREEL)
   RenitClics();
 
   return modifMoteur;
+}
+
+void ActivationServo(){
+  SERVO_Enable(0);
+  SERVO_Enable(1);
+}
+
+void DesactivationServo(){
+  SERVO_Disable(0);
+  SERVO_Disable(1);
 }

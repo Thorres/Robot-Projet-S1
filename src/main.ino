@@ -19,51 +19,68 @@ Date: 2018-09-27
  #define opti180LEFT2 300
  #define opti180RIGHT2 500
  #define ECART 0.2
+ int etatMoteurs = 0;
  long int comptClicsATTG = 0, comptClicsREELD = 0;
  char tableauSuiveur [5] ;
- float VG = 0.7;
- float VD = 0.7;
+ float VG = 0.3;
+ float VD = 0.3;
 /* ******************************************************************  SETUP  ************************************************** */
 void setup()
 {
   BoardInit();
   //scan de la couleur sous le robot et l'assigner a la variable maCouleur
-  ActivationServo();
-  delay(100);
-  SERVO_SetAngle(0, 180);
-  SERVO_SetAngle(1, 180);
-  delay(1000);
-  DesactivationServo();
-  delay(2000);
+  BrasSol();
+  pinMode(47, INPUT);
+  delay(500);
   Serial.println("GO!");
+  while(ROBUS_IsBumper(3) == 0){
+    delay(100);
+  }
+  delay(5000);
 }
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
 {
-  if(DetectionSifflet() == 1){
-    MOTOR_SetSpeed(LEFT, 0);
-    MOTOR_SetSpeed(RIGHT, 0);
-    delay(1000);
-    while(DetectionSifflet() == 0){
-      delay(10);
-    }
-  }
-  MOTOR_SetSpeed(LEFT, 0.1);
-  MOTOR_SetSpeed(LEFT, 0.1);
   //ActionSuiveur();
+  BrasSol();
+  ActionSuiveur();
+  if(DetectionSifflet() == 1){
+    int Siffler = (DetectionSifflet());
+    ReinitMoteurs();
+    BrasHaut();
+    delay(10000);
+  }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
   delay(10);// Delais pour décharger le CPU
 }
 
 /* ******************************************************************FONCTIONS PERSONNELLES************************************************** */
+void BrasHaut(){
+  ActivationServo();
+  delay(100);
+  //SERVO 0 = gauche & SServo 1 = droite
+  SERVO_SetAngle(0, 90);
+  SERVO_SetAngle(1, 70);
+  delay(500);
+  DesactivationServo();
+}
+
+void BrasSol(){
+  ActivationServo();
+  delay(100);
+  //SERVO 0 = gauche & SServo 1 = droite
+  SERVO_SetAngle(0, 125);
+  SERVO_SetAngle(1, 30);
+  delay(500);
+  DesactivationServo();
+}
+
 int DetectionSifflet(){
-  int pinMicro = 53;
+  int pinMicro = 47;
   int Siffler = 0;
 
   Siffler = digitalRead(pinMicro);
   return Siffler;
-
-
 }
 
 int randomInt(int a, int b){
@@ -363,6 +380,7 @@ void ReculerCorriger(float distance){
   comptClicsATTG = 0;
   comptClicsREELD = 0;
 }
+
 //Reinitialisation des moteurs et des clics
 void ReinitMoteurs(){
   MOTOR_SetSpeed(LEFT, 0.0);
@@ -393,6 +411,7 @@ float AjustTrajec(float vintD, long int comptATT, long int comptREEL) {
   return modifMoteur;
 }
 
+//Transformation de distance (m) en nbr de clics
 long int MetresToClics(float distance){
   float circonference, diametre = 0.077;
   long int distClics;

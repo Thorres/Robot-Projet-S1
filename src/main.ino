@@ -8,7 +8,7 @@ Date: 2018-09-27
 
 //Librairies
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
-
+#include <string.h>
 //Variables Globales
  float kP = 0.00085, kI = 0.00004;
  int test;
@@ -18,12 +18,14 @@ Date: 2018-09-27
  #define opti90RIGHT2 237
  #define opti180LEFT2 300
  #define opti180RIGHT2 500
- #define ECART 0.2
+ #define ECARTMIL 0.25
+ #define ECARTEXT 0.4
  int etatMoteurs = 0;
+ int tempsRandom;
  long int comptClicsATTG = 0, comptClicsREELD = 0;
- char tableauSuiveur [5] ;
- float VG = 0.3;
- float VD = 0.3;
+ char tableauSuiveur [6] = "00000";
+ float VG = 0.8;
+ float VD = 0.8;
 /* ******************************************************************  SETUP  ************************************************** */
 void setup()
 {
@@ -33,6 +35,7 @@ void setup()
   pinMode(47, INPUT);
   delay(500);
   Serial.println("GO!");
+  tempsRandom = randomInt(2000, 10000);
   while(ROBUS_IsBumper(3) == 0){
     delay(100);
   }
@@ -41,16 +44,28 @@ void setup()
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
 {
-  //ActionSuiveur();
-  BrasSol();
+
   ActionSuiveur();
+  /*BrasSol();
+  ActionSuiveur();*/
   if(DetectionSifflet() == 1){
     int Siffler = (DetectionSifflet());
     ReinitMoteurs();
-    BrasHaut();
+    //BrasHaut();
     delay(10000);
   }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
+  
+  tempsRandom -= 100; // On enleve 10 ms du temps
+  Serial.println(tempsRandom);
+  if(tempsRandom <= 0)
+  {
+    virage2moteurs(randomInt(30, 180), randomInt(0,100) >= 50 ? RIGHT : LEFT, opti90RIGHT2);
+    tempsRandom = randomInt(2000, 4000);
+    Serial.print("Nouvelle valeur random: ");
+    Serial.println(tempsRandom);
+  }
+    
   delay(10);// Delais pour décharger le CPU
 }
 
@@ -146,66 +161,85 @@ void ActionSuiveur(){
 
   else{
     //Correction a Gauche
-    if (tableauSuiveur == "11000" || tableauSuiveur ==  "11100" || tableauSuiveur == "01100" || tableauSuiveur == "10000"){
+    if (memcmp(tableauSuiveur, "11000", 5 ) == 0 || memcmp(tableauSuiveur, "11100", 5 ) == 0 || memcmp(tableauSuiveur, "01100", 5 ) == 0 || memcmp(tableauSuiveur, "10000", 5 ) == 0){
       //1 1 1 0 0 : 0 1 1 0 0  : 1 1 0 0 0 : 1 0 0 0 0
-      MOTOR_SetSpeed(RIGHT, VD + 0.1);
+      Serial.println("Correction gauche");
+      MOTOR_SetSpeed(RIGHT, VD + 0.5);
       MOTOR_SetSpeed(LEFT, VG);
     }
 
     //Correction a droite
-    if(tableauSuiveur == "00011" || tableauSuiveur ==  "00111" || tableauSuiveur == "00110" || tableauSuiveur == "00001"){
+    else if(memcmp(tableauSuiveur, "00011", 5 ) == 0|| memcmp(tableauSuiveur, "00111", 5 ) == 0 || memcmp(tableauSuiveur, "00110", 5 ) == 0 || memcmp(tableauSuiveur, "00001", 5 ) == 0){
       //0 0 1 1 1 : 0 0 1 1 0 : 0 0 0 1 1 : 0 0 0 0 1
+      Serial.println("Correction droite");
       MOTOR_SetSpeed(RIGHT, VD);
-      MOTOR_SetSpeed(LEFT, VG + 0.1);
+      MOTOR_SetSpeed(LEFT, VG + 0.5);
     }
 
     //Les cas ou le robot doit avancer en ligne droite
     else {
-    AvancerCorrigerIndefini();
+      MOTOR_SetSpeed(RIGHT, VD);
+      MOTOR_SetSpeed(LEFT, VG);
     }
   }
 }
 
 void UpdateSuiveur(){
+  float Vout1 = vOutSuiveurExtr(), Vout2 = vOutSuiveurMilieu();
+  /*Serial.print("V Extr : ");
+  Serial.println(Vout1);
+  Serial.print("V Milieu : ");
+  Serial.println(Vout2);*/
   //Capteur en position 1
-  if((vOutSuiveurExtr() >= 1.3 - ECART && vOutSuiveurExtr() <= 1.3 + ECART) || 
-     (vOutSuiveurExtr() >= 3.9 - ECART && vOutSuiveurExtr() <= 3.9 + ECART))
-    tableauSuiveur[0] = 1;
-  else 
-    tableauSuiveur[0] = 0;
-  
-  //Capteur en position 5
-  if((vOutSuiveurExtr()  >= 2.6 - ECART && vOutSuiveurExtr() <= 2.6 + ECART) || 
-    (vOutSuiveurExtr() >= 3.9 - ECART && vOutSuiveurExtr() <= 3.9 + ECART))
-    tableauSuiveur[4] = 1;
-  else 
-    tableauSuiveur[4] = 0;
+  if((Vout1 >= 2.9 - ECARTEXT && Vout1 <= 2.9 + ECARTEXT) ||
+     (Vout1 >= 0 - ECARTEXT && Vout1 <= 0 + ECARTEXT))
+    tableauSuiveur[0] = '1';
+  else
+    tableauSuiveur[0] = '0';
+
+    
+   /* Serial.print("Extreme gauche : ");
+    Serial.println(tableauSuiveur[0]);*/
   
   //Capteur en position 2
-  if((vOutSuiveurMilieu() >= 1.83 - ECART && vOutSuiveurMilieu() <= 1.83 + ECART) || 
-    (vOutSuiveurMilieu() >= 0.637 - ECART && vOutSuiveurMilieu() <= 0.637 + ECART) ||
-    (vOutSuiveurMilieu() >= 0 - ECART && vOutSuiveurMilieu() <= 0 + ECART))
-    tableauSuiveur[1] = 1;
+  if((Vout2 >= 3.28 - ECARTMIL && Vout2 <= 3.28 + ECARTMIL) || 
+    (Vout2 >= 2.6 - ECARTMIL && Vout2 <= 2.6 + ECARTMIL) ||
+    (Vout2 >= 0 - ECARTMIL && Vout2 <= 0 + ECARTMIL))
+    tableauSuiveur[1] = '1';
   else 
-    tableauSuiveur[1] = 0;
+    tableauSuiveur[1] = '0';
+    /*Serial.print("Gauche : ");
+    Serial.println(tableauSuiveur[1]);*/
 
   //Capteur en position 3
-  if((vOutSuiveurMilieu() >= 0 - ECART && vOutSuiveurMilieu() <= 0 + ECART) ||
-    (vOutSuiveurMilieu() >= 0.637 - ECART && vOutSuiveurMilieu() <= 0.637 + ECART) ||
-    (vOutSuiveurMilieu() >= 2.42 - ECART && vOutSuiveurMilieu() <= 2.42 + ECART))
-    tableauSuiveur[2] = 1;
+  if((Vout2 >= 0 - ECARTMIL && Vout2 <= 0 + ECARTMIL) ||
+    (Vout2 >= 2.6 - ECARTMIL && Vout2 <= 2.6 + ECARTMIL) ||
+    (Vout2 >= 1.28 - ECARTMIL && Vout2 <= 1.28 + ECARTMIL))
+    tableauSuiveur[2] = '1';
   else 
-    tableauSuiveur[2] = 0;
+    tableauSuiveur[2] = '0';
+    /*Serial.print("Centre : ");
+    Serial.println(tableauSuiveur[2]);*/
 
   //Capteur en position 4
-  if((vOutSuiveurMilieu() >= 0 - ECART && vOutSuiveurMilieu() <= 0 + ECART) ||
-    (vOutSuiveurMilieu() >= 2.42 - ECART && vOutSuiveurMilieu() <= 2.42 + ECART) ||
-    (vOutSuiveurMilieu() >= 3.62 - ECART && vOutSuiveurMilieu() <= 3.62 + ECART))
-    tableauSuiveur[3] = 1;
+  if((Vout2 >= 0 - ECARTMIL && Vout2 <= 0 + ECARTMIL) ||
+    (Vout2 >= 2.0 - ECARTMIL && Vout2 <= 2.0 + ECARTMIL) ||
+    (Vout2 >= 1.28 - ECARTMIL && Vout2 <= 1.28 + ECARTMIL))
+    tableauSuiveur[3] = '1';
   else 
-    tableauSuiveur[3] = 0;
+    tableauSuiveur[3] = '0';
+    /*Serial.print("Droite : ");
+    Serial.println(tableauSuiveur[3]);*/
 
-  Serial.println(tableauSuiveur[0]);
+  //Capteur en position 5
+  if((Vout1  >= 1.6 - ECARTEXT && Vout1 <= 1.6 + ECARTEXT) ||
+    (Vout1 >= 0 - ECARTEXT && Vout1 <= 0 + ECARTEXT))
+    tableauSuiveur[4] = '1';
+  else 
+    tableauSuiveur[4] = '0';
+    /*Serial.print("Extreme droite : ");
+    Serial.println(tableauSuiveur[4]);*/
+    //Serial.println(tableauSuiveur);
   
 }
 
@@ -214,8 +248,8 @@ float vOutSuiveurExtr(){
 
   vOutExtr = analogRead(sensorA1) / 200.00;
   //Tension = analogread / 200
-  Serial.print("La tension est de : ");
-  Serial.println(vOutExtr); 
+  /*Serial.print("La tension est de : ");
+  Serial.println(vOutExtr);*/ 
   delay(50);
   return vOutExtr;
 }
@@ -225,8 +259,8 @@ float vOutSuiveurMilieu(){
 
   vOutMilieu = analogRead(sensorA0) / 200.00;
   //Tension = analogread / 200
-  Serial.print("La tension est de : ");
-  Serial.println(vOutMilieu); 
+  /*Serial.print("La tension est de : ");
+  Serial.println(vOutMilieu);*/
   delay(50);
   return vOutMilieu;
 }

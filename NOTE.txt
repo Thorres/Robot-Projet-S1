@@ -1,0 +1,4 @@
+Distance voulu
+--------------
+Sonar = 30
+IR    = 200

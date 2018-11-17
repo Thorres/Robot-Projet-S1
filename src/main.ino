@@ -21,20 +21,22 @@ Date: 2018-09-27
  #define ECARTMIL 0.25
  #define ECARTEXT 0.4
  #define DISTIRMUR 300
- #define DISTSOMUR 5
- #define DISTAPVIRAGE 0.2
+ #define DISTSOMUR 12
+ #define DISTAVVIRAGE 0.25
+ #define DISTAPVIRAGE 2
  #define DROITE 1
  #define AVANT 2
  #define GAUCHE 3
  #define ARRIERE 4
  int etatMoteurs = 0;
+ int etape = 0;
  int tempsRandom;
  long int comptClicsATTG = 0, comptClicsREELD = 0;
  char tableauSuiveur [6] = "00000";
  char tableauSuiveurTemp [6] = "00000";
  float deplacementLabi[100];
- float VG = 0.3;
- float VD = 0.3;
+ float VG = 0.1;
+ float VD = 0.1;
 /* ******************************************************************  SETUP  ************************************************** */
 void setup()
 {
@@ -54,37 +56,44 @@ void setup()
 void loop() 
 {
   ENCODER_Reset(LEFT);
-  /*
-  //while(detection de l'objet == faux){
-    int etape = 0;
-
-    while(DetectionIntersection() == 0){
-      ActionSuiveur();
-    }
-
-    EnregistrerDistance(etape);
-    etape++;
-    EnregistrerVirage(&etape);
-    etape++;
-  //}
-  */
+    //while(detection de l'objet == faux){
+      Serial.println("SALUT JE SUIS ICI");
+      while(DetectionIntersection() == 0 && distanceSO(0) == 1){
+        ActionSuiveur();
+      }
+      Serial.print("Intersection rencontree a l'etape ");
+      Serial.println(etape);
+      Serial.print("Apres une distance de ");
+      Serial.println(ENCODER_Read(LEFT));
+      EnregistrerDistance(&etape);
+      Serial.print("La distance enregistree est de ");
+      Serial.println(deplacementLabi[etape]);
+      ActionSuiveurDist(DISTAVVIRAGE);
+      comptClicsATTG = 0;
+      //Serial.print("Distance enregistree : ");
+      //Serial.println(deplacementLabi[etape]);
+      etape++;
+      EnregistrerVirage(&etape);
+      etape++;
+    //}
 
   //Test du suiveur de lignes
-  if(ROBUS_IsBumper(1) == 1){
+  /*if(ROBUS_IsBumper(1) == 1){
     virage2moteurs(90, RIGHT, 0);
     ActionSuiveurDist(30);
     virage2moteurs(180, RIGHT, 0);
     ActionSuiveurDist(30);
-  }
+  }*/
 
   //Test du detecteur d'intersection
   if(ROBUS_IsBumper(2) == 1){
-    int compteurClics = 0, clicsMoment = 0;
+    Serial.println(distanceSO(0));
+    /*int compteurClics = 0, clicsMoment = 0;
     for(int i = 0; i < 10; i++)
       clicsMoment = ENCODER_Read(0);
       compteurClics += clicsMoment;
       AvancerCorriger(0.3);
-    Serial.println(compteurClics);
+    Serial.println(compteurClics);*/
   //Le robot avance tant qu'il ne detecte pas une intersection
   
     //int etape = 0;
@@ -124,31 +133,34 @@ void loop()
 
   //Test de l'enregistrement des distances
   if(ROBUS_IsBumper(0) == 1){
-    float distance = 0.5;
+    float distance = 0.3;
     int etape = 0;
-    Serial.print(deplacementLabi[0]);
+    /*Serial.print(deplacementLabi[0]);
     Serial.print("\t");
     Serial.print(deplacementLabi[1]);
     Serial.print("\t");
-    Serial.println(deplacementLabi[2]);
+    Serial.println(deplacementLabi[2]);*/
     for (int i = 0; i < 3; i++){
+      Serial.print("Etape : ");
+      Serial.println(etape);
       AvancerCorriger(distance);
-      EnregistrerDistance(etape);
-      distance += 0.1;
       etape ++;
-      Serial.print(deplacementLabi[i]);
-      Serial.print("\t");
+      //Serial.print(deplacementLabi[i]);
+      //Serial.print("\n");
+      delay(300);
     }
-    Serial.println("");
     delay(2000);
 
     //Ajout du test de la gestion d'un CDS 
     //Le robot devrait refaire la derniere distance effectuee et remettre la valeur dans le tableau a 0
-    /*
+    Serial.println(etape);
     gererCDS(&etape);
-    Serial.print(deplacementLabi[i]);
-    Serial.print("\t");
-    */
+
+    for (int i = 0; i < 3; i++){
+      Serial.print(deplacementLabi[i]);
+      Serial.print("\t");
+    }
+    
   }
 
   //Test de l'enregitrement des virages
@@ -161,7 +173,7 @@ void loop()
   //5 secs pour rammasser le robot en appuyant sur le bumper arriere
   if(ROBUS_IsBumper(3) == 1){
     ReinitMoteurs();
-    delay(5000);
+    delay(10000);
   }
   // SOFT_TIMER_Update(); // A decommenter pour utiliser des compteurs logiciels
     
@@ -172,23 +184,38 @@ void loop()
 
 int gererCDS(int *numEtape){
   //Pour prendre la position d'une distance
-  *numEtape--;
+  *numEtape -= 1;
   //Le robot fait un U-Turn et refait la derniere distance enregistree
   virage2moteurs(180, RIGHT, opti180RIGHT2);
+  ActionSuiveurDist(deplacementLabi[*numEtape]);
+  Serial.print("Pour l'etape ");
+  Serial.print(*numEtape);
+  Serial.print("   Le nombre de clic enregistrer a la derniere position --> ");
+  Serial.print(deplacementLabi[*numEtape]);
+
   //ActionSuiveurDist(deplacementLabi[*numEtape]);
-  AvancerCorriger(deplacementLabi[*numEtape]);
+  //AvancerTestAvecEnre(deplacementLabi[*numEtape], *numEtape);
   deplacementLabi[*numEtape] = 0;
   //Decrementation de l'etape pour modifier la valeur du virage
   *numEtape--;
 }
 
+void EnregistrerDistance(int *numEtape){
+  deplacementLabi[*numEtape] = ENCODER_Read(LEFT);
+}
+
 int EnregistrerVirage(int *numEtape){
-  Serial.println(deplacementLabi[*numEtape]);
-  Serial.println(distanceSO(0));
+  Serial.print(distanceIR(2));
+  Serial.print("\t");
+  Serial.print(distanceSO(0));
+  Serial.print("\t");
+  Serial.print(distanceIR(3));
+  Serial.print("\t");
   if(deplacementLabi[*numEtape] == 0){
 
   //Test d'abord sil peut tourner a droite
     if(distanceIR(2) == 1){
+      Serial.println("Virage a droite");
       virage2moteurs(90, RIGHT, opti90RIGHT2);
       deplacementLabi[*numEtape] = DROITE;
       ActionSuiveurDist(DISTAPVIRAGE);
@@ -196,12 +223,14 @@ int EnregistrerVirage(int *numEtape){
   
   //Test s'il peut aller tout droit
     else if(distanceSO(0) == 1){
+      Serial.println("Aller tout droit");
       deplacementLabi[*numEtape] = AVANT;
       ActionSuiveurDist(DISTAPVIRAGE);
     }
 
   //Test s'il peut tourner a gauche
     else if(distanceIR(3) == 1){
+      Serial.println("Virage a gauche");
       virage2moteurs(90, LEFT, opti90LEFT2);
       deplacementLabi[*numEtape] = GAUCHE;
       ActionSuiveurDist(DISTAPVIRAGE);
@@ -209,47 +238,48 @@ int EnregistrerVirage(int *numEtape){
 
   //Sinon c'est qu'il est dans un cul de sac
     else{
+      Serial.println("Cul de sac");
+      gererCDS(numEtape);
       deplacementLabi[*numEtape] = ARRIERE;
     }
   }
 
   //Si la valeur attitrer a la case du virage n'est pas 4 et pas 0
   //Le robot a alors deja effectuer des virages a partir de la meme intersection
-  else if(deplacementLabi[*numEtape] != 4){
+  else if(deplacementLabi[*numEtape] != 4 && deplacementLabi[*numEtape] != 0 ){
 
-    if(distanceIR(0) == 1){
+    if(distanceIR(2) == 1){
+      Serial.println("Virage a droite 2");
       virage2moteurs(90, RIGHT, opti90RIGHT2);
       deplacementLabi[*numEtape] + 1;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      //ActionSuiveurDist(DISTAPVIRAGE);
+      AvancerCorriger(DISTAPVIRAGE);
     }
     else if(distanceSO(0) == 1){
+      Serial.println("Aller tout droit 2");
       deplacementLabi[*numEtape] + 2;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      //ActionSuiveurDist(DISTAPVIRAGE);
+      AvancerCorriger(DISTAPVIRAGE);
     }
-    else if(distanceIR(1) == 1){
+    else if(distanceIR(3) == 1){
+      Serial.println("Virage a gauche 2");
       virage2moteurs(90, LEFT, opti90LEFT2);
       deplacementLabi[*numEtape] + 3;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      //ActionSuiveurDist(DISTAPVIRAGE);
+      AvancerCorriger(DISTAPVIRAGE);
     }
   }
   else{
+    Serial.println("Cul de sac 2");
     gererCDS(numEtape);
   }
   return 0;
-}
-
-void EnregistrerDistance(int numEtape){
-  int clicsFaits = ENCODER_Read(LEFT);
-  Serial.println(clicsFaits);
-
-  deplacementLabi[numEtape] = clicsFaits;
 }
 
 int DetectionIntersection(){
   //Si les detecteurs IR detectes une distance plus grande que la distance du mur alors la condition deviens vrai
   if (distanceIR(3) == 1 || distanceIR(2) == 1){
    // Serial.println("Je detecte une intersection");
-    AvancerCorriger(DISTAPVIRAGE);
     return 1;
   }
   else{
@@ -302,8 +332,8 @@ int distanceIR (int id) {
 int distanceSO (int id) {
   id = 0;
   //SONAR
-  Serial.print("Sonar: ");
-  Serial.println(SONAR_GetRange(0));
+  /*Serial.print("Sonar: ");
+  Serial.println(SONAR_GetRange(0));*/
   float so = SONAR_GetRange(id);
 
   if (so > DISTSOMUR) 
@@ -340,7 +370,9 @@ void ActionBras(){
 
 float ActionSuiveurDist(float distance){
   //Noir = 1 et blanc = 0
-  distance = MetresToClics(distance);
+  if(distance < 100){
+    distance = MetresToClics(distance);
+  }
   RenitClics();
   //Serial.println(distance);
   long int comptClics = 0;
@@ -360,7 +392,7 @@ float ActionSuiveurDist(float distance){
     if (memcmp(tableauSuiveur, "11100", 5 ) == 0 || memcmp(tableauSuiveur, "01100", 5 ) == 0)
     {
       //1 1 1 0 0 : 0 1 1 0 0
-     // Serial.println("Correction gauche");
+      //Serial.println("Correction gauche");
       MOTOR_SetSpeed(RIGHT, VD + correctionMinime);
       MOTOR_SetSpeed(LEFT, VG);
       correctionMinime -= 0.002;
@@ -404,7 +436,7 @@ float ActionSuiveurDist(float distance){
       //delay(50);
     }
     else if(memcmp(tableauSuiveur, "00000", 5 ) == 0|| memcmp(tableauSuiveur, "01000", 5 ) == 0|| memcmp(tableauSuiveur, "00100", 5 ) == 0|| memcmp(tableauSuiveur, "00010", 5 ) == 0){
-      //Serial.println("Garder les meme vitesses");
+     // Serial.println("Garder les meme vitesses");
     }
 
     //Les cas ou le robot doit avancer en ligne droite
@@ -430,7 +462,7 @@ float ActionSuiveur(){
     //Correction a Gauche
     if (memcmp(tableauSuiveur, "11000", 5 ) == 0 || memcmp(tableauSuiveur, "11100", 5 ) == 0 || memcmp(tableauSuiveur, "01100", 5 ) == 0 || memcmp(tableauSuiveur, "10000", 5 ) == 0){
       //1 1 1 0 0 : 0 1 1 0 0  : 1 1 0 0 0 : 1 0 0 0 0
-      Serial.println("Correction gauche");
+      //Serial.println("Correction gauche");
       MOTOR_SetSpeed(RIGHT, VD + 0.05);
       MOTOR_SetSpeed(LEFT, VG);
     }
@@ -438,7 +470,7 @@ float ActionSuiveur(){
     //Correction a droite
     else if(memcmp(tableauSuiveur, "00011", 5 ) == 0|| memcmp(tableauSuiveur, "00111", 5 ) == 0 || memcmp(tableauSuiveur, "00110", 5 ) == 0 || memcmp(tableauSuiveur, "00001", 5 ) == 0){
       //0 0 1 1 1 : 0 0 1 1 0 : 0 0 0 1 1 : 0 0 0 0 1
-      Serial.println("Correction droite");
+      //Serial.println("Correction droite");
       MOTOR_SetSpeed(RIGHT, VD);
       MOTOR_SetSpeed(LEFT, VG + 0.05);
     }
@@ -532,6 +564,45 @@ float vOutSuiveurMilieu(){
   return vOutMilieu;
 }
 
+void AvancerTestAvecEnreIndefini(int etape){
+
+  MOTOR_SetSpeed(LEFT, 0.3);
+  MOTOR_SetSpeed(RIGHT, 0.3);
+  delay(50);
+  comptClicsATTG += ENCODER_Read(LEFT);
+
+}
+
+void AvancerTestAvecEnre(float distance, int etape){
+  float VG = 0.3;
+  float VD = 0.3;
+  long int comptClicsATTG = 0, comptClicsREELD = 0;
+  if (distance < 1000){
+    distance = MetresToClics(distance);
+  }
+  /*Acceleration jusqu'a vitesse max pour 90% de la distance a faire*/
+  while (comptClicsATTG < distance)
+  {
+    MOTOR_SetSpeed(LEFT, VG);
+    MOTOR_SetSpeed(RIGHT, VD);
+    delay(50);
+
+    //Compteur de clics 
+    float leftClic = ENCODER_Read(LEFT);
+    float rightClic = ENCODER_Read(RIGHT);
+    comptClicsATTG += leftClic;
+    comptClicsREELD += rightClic;
+
+    //Ajustement de la trajectoire avec le PID
+    VD = AjustTrajec(VD,comptClicsATTG, comptClicsREELD);
+    
+    RenitClics();
+  }
+
+  deplacementLabi[etape] = comptClicsATTG;
+  ReinitMoteurs();
+}
+
 void AvancerCorriger(float distance){
   float VG = 0.01;
   float VD = 0.01;
@@ -554,7 +625,7 @@ void AvancerCorriger(float distance){
 
     //Acceleration progressive
     RenitClics ();
-    if (VG < 0.9)
+    if (VG < 0.1)
     {
       VG += 0.03;
       VD += 0.03;

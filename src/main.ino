@@ -11,6 +11,7 @@ Date: 2018-09-27
 #include <string.h>
 //Variables Globales
  float kP = 0.00085, kI = 0.00004;
+ int test;
  #define opti45LEFT2 175
  #define opti45RIGHT2 100
  #define opti90LEFT2 417
@@ -19,7 +20,7 @@ Date: 2018-09-27
  #define opti180RIGHT2 500
  #define ECARTMIL 0.25
  #define ECARTEXT 0.4
- #define DISTIRMUR 300
+ #define DISTIRMUR 200
  #define DISTSOMUR 12
  #define DISTAVVIRAGE 0.25
  #define DISTAPVIRAGE 2
@@ -29,8 +30,10 @@ Date: 2018-09-27
  #define ARRIERE 4
  int etatMoteurs = 0;
  int etape = 0;
+ int tempsRandom;
  long int comptClicsATTG = 0, comptClicsREELD = 0;
  char tableauSuiveur [6] = "00000";
+ char tableauSuiveurTemp [6] = "00000";
  float deplacementLabi[100];
  float VG = 0.1;
  float VD = 0.1;
@@ -44,19 +47,25 @@ void setup()
     deplacementLabi[i] = 0;
   }
   Serial.println("GO!");
+  /*while(ROBUS_IsBumper(3) == 0){
+    delay(100);
+  }
+  delay(1000);*/
 }
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
 {
   ENCODER_Reset(LEFT);
-  //Tant que l'objet n'est pas detecte (ici c'est le sifflet de 5kH)
-    while(DetectionSifflet == 0){
+  if(ROBUS_IsBumper(2) == 1){
+  //Tant que l'objet n'est pas detecte (ici c'est le bumper arriere)
+    while(ROBUS_IsBumper(3) == 0){
       Serial.println("Je debute un deplacement");
 
       //Tant que le robot ne detecte pas d'intersection, il suit la ligne
-      while(DetectionIntersection() == 0 && distanceSO(0) == 1){
-        ActionSuiveur();
-      }
+        while(DetectionIntersection() == 0 && distanceSO(0) == 1){
+          Serial.println("J'esssaie d'avancer");
+          ActionSuiveur();
+        }
 
       Serial.print("Intersection rencontree a l'etape ");
       Serial.println(etape);
@@ -84,16 +93,17 @@ void loop()
 
       RenitClics();
     }
-
-    for( int i = 0; i < etape; i++){
-      Serial.print(deplacementLabi[i]);
-      Serial.print("\t");
-      if(i % 10 == 0){
-        Serial.print("\n");
-      }
+  }
+  for( int i = 0; i < etape; i++)
+  {
+    Serial.print(deplacementLabi[i]);
+    Serial.print("\t");
+    if(i % 10 == 0){
+      Serial.print("\n");
     }
+  }
 
-    //S'il detecte l'objet a ramasser il effectue la sequence d'alignement et de prise de l'objet
+  //S'il detecte l'objet a ramasser il effectue la sequence d'alignement et de prise de l'objet
     //ALIGNEMENT AVEC PIXY
     //RAMASSAGE DE L'objet
 
@@ -105,38 +115,38 @@ void loop()
     RevenirLabi();
     }
     */
-  }
+    
   delay(10);// Delais pour décharger le CPU
 }
 
 /* ******************************************************************FONCTIONS PERSONNELLES************************************************** */
-
 //Fonction permettant de faire le chemin inverse
 void RevenirLabi(){
   for(int i = etape; i > 0; i--){
-    
-    //Si i est pair, c"est une distance
+
+    //Si i est pair, c'est une distance
     if(i % 2 == 0){
       ActionSuiveurDist(deplacementLabi[i]);
       ActionSuiveurDist(DISTAVVIRAGE);
     }
 
-    //Si i est impair c'est un virage
-    else{
+    //Si i est impair, c'est un virage
+    else {
       if(deplacementLabi[i] == DROITE){
         virage2moteurs(90, LEFT, opti90LEFT2);
         ActionSuiveurDist(DISTAPVIRAGE);
       }
 
-      else if(deplacementLabi[i] == AVANT){
+      else if(deplacementLabi[i] == DROITE){
         ActionSuiveurDist(DISTAPVIRAGE);
       }
 
-      else if(deplacementLabi[i] == GAUCHE){
+      else if(deplacementLabi[i] == DROITE){
         virage2moteurs(90, RIGHT, opti90LEFT2);
         ActionSuiveurDist(DISTAPVIRAGE);
       }
     }
+  }
 }
 
 //Fonction ou le robot gere un cul de sac et elimine les donnes de distance de sa memoire
@@ -146,19 +156,19 @@ int gererCDS(int *numEtape){
   //Le robot fait un U-Turn et refait la derniere distance enregistree
   virage2moteurs(180, RIGHT, opti180RIGHT2);
   ActionSuiveurDist(deplacementLabi[*numEtape]);
-  Serial.print("Pour l'etape ");
+  /*Serial.print("Pour l'etape ");
   Serial.print(*numEtape);
   Serial.print("   Le nombre de clic enregistrer a la derniere position --> ");
-  Serial.print(deplacementLabi[*numEtape]);
+  Serial.print(deplacementLabi[*numEtape]);*/
 
   //ActionSuiveurDist(deplacementLabi[*numEtape]);
   //AvancerTestAvecEnre(deplacementLabi[*numEtape], *numEtape);
   deplacementLabi[*numEtape] = 0;
   //Decrementation de l'etape pour modifier la valeur du virage
-  *numEtape--;
+  *numEtape -= 1;
 }
 
-//Fonction qui permet d'enregistrer le nombre de clics effectues dans la chaine representant son parcours.
+//Fonction qui permet d'enregistrer le nombre de clics effectues dans la chaine
 void EnregistrerDistance(int *numEtape){
   deplacementLabi[*numEtape] = ENCODER_Read(LEFT);
 }
@@ -369,67 +379,78 @@ float ActionSuiveurDist(float distance){
 //Fonction qui envoie les correction moteurs pour que le robot suive la ligne pour une distance indeterminee
 float ActionSuiveur(){
   //Noir = 1 et blanc = 0
+  float correctionMinime = 0.04, correctionImportante = 0.07;
+  UpdateSuiveur();
 
-    UpdateSuiveur();
+  Serial.print("Vitesse VD :");
+  Serial.println(VD);
 
-    //Correction a Gauche minime
-    if (memcmp(tableauSuiveur, "11100", 5 ) == 0 || memcmp(tableauSuiveur, "01100", 5 ) == 0)
-    {
-      //1 1 1 0 0 : 0 1 1 0 0
-      //Serial.println("Correction gauche");
-      MOTOR_SetSpeed(RIGHT, VD + correctionMinime);
-      MOTOR_SetSpeed(LEFT, VG);
-      correctionMinime -= 0.002;
-    }
-
-    //Correction a gauche importante
-    else if (memcmp(tableauSuiveur, "11000", 5 ) == 0 || memcmp(tableauSuiveur, "10000", 5 ) == 0)
-    {
-      //1 1 0 0 0 : 1 0 0 0 0
-      //Serial.println("Correction gauche importante");
-      MOTOR_SetSpeed(RIGHT, VD + correctionImportante);
-      MOTOR_SetSpeed(LEFT, VG);
-      correctionImportante -= 0.002;
-    }
-    
-    //Correction a droite minime
-    else if(memcmp(tableauSuiveur, "00111", 5 ) == 0 || memcmp(tableauSuiveur, "00110", 5 ) == 0)
-    {
-      //0 0 1 1 1 : 0 0 1 1 0 : 0 0 0 1 1 : 0 0 0 0 1
-      //Serial.println("Correction droite");
-      MOTOR_SetSpeed(RIGHT, VD);
-      MOTOR_SetSpeed(LEFT, VG + correctionMinime);
-      correctionMinime -= 0.002;
-    }
-
-    //Correction a droite importante
-    else if(memcmp(tableauSuiveur, "00011", 5 ) == 0|| memcmp(tableauSuiveur, "00001", 5 ) == 0)
-    {
-      // 0 0 0 1 1 : 0 0 0 0 1
-      //Serial.println("Correction importante droite");
-      MOTOR_SetSpeed(RIGHT, VD);
-      MOTOR_SetSpeed(LEFT, VG + correctionImportante);
-      correctionImportante -= 0.002;
-    }
-    else if(memcmp(tableauSuiveur, "00000", 5 ) == 0|| memcmp(tableauSuiveur, "01000", 5 ) == 0|| memcmp(tableauSuiveur, "00100", 5 ) == 0|| memcmp(tableauSuiveur, "00010", 5 ) == 0){
-     // Serial.println("Garder les meme vitesses");
-    }
-
-    //Les cas ou le robot doit avancer en ligne droite
-    else /*if(memcmp(tableauSuiveur, "11111", 5 ) == 0 || memcmp(tableauSuiveur, "01110", 5 ) == 0)*/{
-      //Serial.println("Avancer tout droit");
-      MOTOR_SetSpeed(LEFT, VG);
-      MOTOR_SetSpeed(RIGHT, VD);
-    }
-    
+  //Correction a Gauche minime
+  if (memcmp(tableauSuiveur, "11100", 5 ) == 0 || memcmp(tableauSuiveur, "01100", 5 ) == 0)
+  {
+    //1 1 1 0 0 : 0 1 1 0 0
+    Serial.println("Correction gauche");
+    MOTOR_SetSpeed(RIGHT, VD + correctionMinime);
+    MOTOR_SetSpeed(LEFT, VG);
+    correctionMinime -= 0.002;
+    //Serial.println(correctionMinime * 1000);
+    //delay(50);
   }
-  ReinitMoteurs(); 
-}
 
+  //Correction a gauche importante
+  else if (memcmp(tableauSuiveur, "11000", 5 ) == 0 || memcmp(tableauSuiveur, "10000", 5 ) == 0)
+  {
+    //1 1 0 0 0 : 1 0 0 0 0
+    Serial.println("Correction gauche importante");
+    MOTOR_SetSpeed(RIGHT, VD + correctionImportante);
+    MOTOR_SetSpeed(LEFT, VG);
+    correctionImportante -= 0.002;
+    //Serial.println(correctionImportante * 1000);
+    //delay(50);
+  }
+  
+  //Correction a droite minime
+  else if(memcmp(tableauSuiveur, "00111", 5 ) == 0 || memcmp(tableauSuiveur, "00110", 5 ) == 0)
+  {
+    //0 0 1 1 1 : 0 0 1 1 0 : 0 0 0 1 1 : 0 0 0 0 1
+    Serial.println("Correction droite");
+    MOTOR_SetSpeed(RIGHT, VD);
+    MOTOR_SetSpeed(LEFT, VG + correctionMinime);
+    correctionMinime -= 0.002;
+    //Serial.println(correctionMinime * 1000);
+    //delay(50);
+  }
+
+  //Correction a droite importante
+  else if(memcmp(tableauSuiveur, "00011", 5 ) == 0|| memcmp(tableauSuiveur, "00001", 5 ) == 0)
+  {
+    // 0 0 0 1 1 : 0 0 0 0 1
+    Serial.println("Correction importante droite");
+    MOTOR_SetSpeed(RIGHT, VD);
+    MOTOR_SetSpeed(LEFT, VG + correctionImportante);
+    correctionImportante -= 0.002;
+    //Serial.println(correctionImportante * 1000);
+    //delay(50);
+  }
+  else if(memcmp(tableauSuiveur, "00000", 5 ) == 0|| memcmp(tableauSuiveur, "01000", 5 ) == 0|| memcmp(tableauSuiveur, "00100", 5 ) == 0|| memcmp(tableauSuiveur, "00010", 5 ) == 0){
+     Serial.println("Garder les meme vitesses");
+  }
+
+  //Les cas ou le robot doit avancer en ligne droite
+  else /*if(memcmp(tableauSuiveur, "11111", 5 ) == 0 || memcmp(tableauSuiveur, "01110", 5 ) == 0)*/{
+    Serial.println("Avancer tout droit");
+    MOTOR_SetSpeed(LEFT, VG);
+    MOTOR_SetSpeed(RIGHT, VD);
+  }
+}
 //Fonction qui met a jour letat du tableau representant les senseurs
 void UpdateSuiveur(){
   float Vout1 = vOutSuiveurExtr(), Vout2 = vOutSuiveurMilieu();
-
+  /*Serial.print("V Extr : ");
+  Serial.println(Vout1);
+  Serial.print("V Milieu : ");
+  Serial.println(Vout2);*/
+  //Capteur en position 1
   if((Vout1 >= 2.9 - ECARTEXT && Vout1 <= 2.9 + ECARTEXT) ||
      (Vout1 >= 0 - ECARTEXT && Vout1 <= 0 + ECARTEXT))
     tableauSuiveur[0] = '1';
@@ -478,6 +499,7 @@ void UpdateSuiveur(){
     tableauSuiveur[4] = '0';
     /*Serial.print("Extreme droite : ");
     Serial.println(tableauSuiveur[4]);*/
+    //Serial.println(tableauSuiveur);
   
 }
 
@@ -486,6 +508,9 @@ float vOutSuiveurExtr(){
   float sensorA1 = A1, vOutExtr = 0 ;
 
   vOutExtr = analogRead(sensorA1) / 200.00;
+  //Tension = analogread / 200
+  /*Serial.print("La tension est de : ");
+  Serial.println(vOutExtr);*/ 
   delay(50);
   return vOutExtr;
 }
@@ -495,6 +520,9 @@ float vOutSuiveurMilieu(){
   float sensorA0 = A0, vOutMilieu = 0 ;
 
   vOutMilieu = analogRead(sensorA0) / 200.00;
+  //Tension = analogread / 200
+  /*Serial.print("La tension est de : ");
+  Serial.println(vOutMilieu);*/
   delay(50);
   return vOutMilieu;
 }
@@ -522,7 +550,7 @@ void AvancerCorriger(float distance){
 
     //Acceleration progressive
     RenitClics ();
-    if (VG < 0.4)
+    if (VG < 0.1)
     {
       VG += 0.03;
       VD += 0.03;
@@ -585,11 +613,13 @@ void AvancerCorrigerIndefini(){
 
 //Fonction permettant de reculer avec le PID, l'acceleration et la deceleration
 void ReculerCorriger(float distance){
+  Serial.println("Debut");
   float VG = -0.01;
   float VD = -0.01;
   long int comptClicsATTG = 0, comptClicsREELD = 0;
   int clics = - MetresToClics((0.9 * distance));
-  
+  Serial.println(clics);
+  Serial.println(comptClicsATTG);
   /*Acceleration jusqu'a vitesse max pour 90% de la distance a faire*/
   while (comptClicsATTG > (- MetresToClics((0.9 * distance))))
   {
@@ -609,7 +639,7 @@ void ReculerCorriger(float distance){
 
     //Acceleration progressive
     RenitClics ();
-    if (VG > - 0.4)
+    if (VG > - 0.9)
     {
       VG -= 0.03;
       VD -= 0.03;
@@ -636,7 +666,7 @@ void ReculerCorriger(float distance){
     RenitClics();
 
     //Ralentissement progressif
-    if (VG < - 0.25)
+    if (VG < 0.25)
     {
       VG += 0.05;
       VD += 0.05;

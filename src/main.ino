@@ -10,44 +10,48 @@ Date: 2018-09-27
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
 #include <string.h>
 //#include <Pixy2.h>
+#include <Pixy2I2C.h>
+
 
 //Variables Globales
- float kP = 0.00085, kI = 0.00004;
- #define opti45LEFT2 175
- #define opti45RIGHT2 100
- #define opti90LEFT2 417
- #define opti90RIGHT2 237
- #define opti180LEFT2 300
- #define opti180RIGHT2 500
- #define ECARTMIL 0.25
- #define ECARTEXT 0.4
- #define DISTIRMUR 300
- #define DISTSOMUR 17.00
- #define DISTAVVIRAGE 0.11
- #define DISTAPVIRAGE 0.265
- #define DROITE 1
- #define AVANT 2
- #define GAUCHE 3
- #define ARRIERE 4
- int etatMoteurs = 0;
- int etape = 0;
- int tempsRandom;
- long int comptClicsATTG = 0, comptClicsREELD = 0;
- char tableauSuiveur [6] = "00000";
- char tableauSuiveurTemp [6] = "00000";
- float deplacementLabi[100];
- float VG = 0.1;
- float VD = 0.1;
- int maxX =  175;
-  int minX = 169;
-int maxH =  65;
-int minH = 55;
+float kP = 0.00085, kI = 0.00004;
+#define opti45LEFT2 175
+#define opti45RIGHT2 100
+#define opti90LEFT2 417
+#define opti90RIGHT2 237
+#define opti180LEFT2 300
+#define opti180RIGHT2 500
+#define ECARTMIL 0.25
+#define ECARTEXT 0.4
+#define DISTIRMUR 300
+#define DISTSOMUR 17.00
+#define DISTAVVIRAGE 0.11
+#define DISTAPVIRAGE 0.265
+#define DROITE 1
+#define AVANT 2
+#define GAUCHE 3
+#define ARRIERE 4
+int etatMoteurs = 0;
+int fromage =0;
+int etape = 0;
+int tempsRandom;
+long int comptClicsATTG = 0, comptClicsREELD = 0;
+char tableauSuiveur [6] = "00000";
+char tableauSuiveurTemp [6] = "00000";
+float deplacementLabi[100];
+float VG = 0.15;
+float VD = 0.15;
+int maxX =  170;
+int minX = 160;
+int maxH =  60;
+int minH = 50;
 int go = 0;
- //Pixy2 pixy;
+Pixy2I2C pixy;
 /* ******************************************************************  SETUP  ************************************************** */
 void setup()
 {
   BoardInit();
+  Serial.begin(9600);
   Serial1.begin(115200);//////////////////////--------TestBras
   pinMode(47, INPUT);
   delay(500);
@@ -55,8 +59,26 @@ void setup()
   for (int i = 0; i < 100; i++){
     deplacementLabi[i] = 0;
   }
-  //pixy.init();
+  pixy.init();
+  delay(3000);
+  
   Serial.println("GO!");
+ /* while(1)
+  {
+    while(ROBUS_IsBumper(3) == 1)
+    {
+    Serial1.write('1');
+    Serial1.write('2');
+    printit();
+    delay(1000);
+    
+    }
+    while(ROBUS_IsBumper(3) == 0)
+    {
+      delay(100);
+    }
+    
+  }*/
 }
 /* ******************************************************************   LOOP   ************************************************** */
 void loop() 
@@ -64,48 +86,57 @@ void loop()
   ENCODER_Reset(LEFT);
   if(ROBUS_IsBumper(3) == 1)
   {
+    while(fromage == 0)
+    {
+
+    detectionObjet();
     //pixy.ccc.getBlocks();
     Serial.println("Je debute un deplacement");
 
     //Tant que le robot ne detecte pas d'intersection ou de mur devant lui ou d'objet il suit la ligne
-    while(DetectionIntersection() == 0 && SONAR_GetRange(0) > 8.00){
+    while(DetectionIntersection() == 0 && SONAR_GetRange(0) > 8.00 && fromage == 0){
+      detectionObjet();
       ActionSuiveur();
+      
     }
-    
-      Serial.println("Je detecte une intersection");
-      Serial.print("Distance du sonar avant : ");
+      MOTOR_SetSpeed(LEFT, 0);
+      MOTOR_SetSpeed(RIGHT, 0);
+      if(DetectionIntersection() == 1)
+        Serial.println("Je detecte une intersection");
+      else if(fromage == 1)
+        Serial.println("Je detecte un objet");
+      /*Serial.print("Distance du sonar avant : ");
       Serial.println(SONAR_GetRange(0));
       Serial.print("Distance IR droite : ");
       Serial.println(ROBUS_ReadIR(2));
       Serial.print("Distance IR gauche : ");
-      Serial.println(ROBUS_ReadIR(3));
+      Serial.println(ROBUS_ReadIR(3));*/
       //A l'intersection ou lorsqu'il detecte un objet il enregistre la distance qu'il a parcouru
-      EnregistrerDistance();
+      if(fromage == 0)
+        EnregistrerDistance();
 
     //if(!pixy.ccc.numBlocks){
       //Si le robot n'est pas dans un cul de sac il avance jusqu'au centre de l'intersection
-      if(DetectionIntersection() == 1){
+      if(DetectionIntersection() == 1 && fromage == 0){
+        detectionObjet();
         ActionSuiveurDist(DISTAVVIRAGE);
       }
 
       //Si c'est un cul de sac il le gere et efface les donnees de sa memoire
-      if(DetectionIntersection() == 0 && distanceSO(0) == 1){
+      if(DetectionIntersection() == 0 && distanceSO(0) == 1 && fromage == 0){
         gererCDS();
         Serial.println("Jai fini de gerer le cul de sac");
       }
       
       //Prise de la decision du bon virage a effectuer
-      EnregistrerVirage();
+      if (fromage == 0)
+        EnregistrerVirage();
       Serial.println("---------------------------------------------");
       RenitClics();
+    }
+    Serial.println("Je detecte un objet et donc je vais m'aligner dessus");
+    centrerObjet();
   }
-    /*else{
-      Serial.println("Je detecte un objet et donc je vais m'aligner dessus");
-      centrerObjet();
-    }*/
-
-    //virage2moteurs(180, RIGHT, opti180RIGHT2);
-    //RevenirLabi();
   
   if(ROBUS_IsBumper(1) == 1){
     for( int i = 0; i < etape; i++)
@@ -126,9 +157,9 @@ void loop()
   }
   if(ROBUS_IsBumper(0) == 1){
     Serial.print("Distance du sonar avant : ");
-    Serial.println(SONAR_GetRange(0));
-    Serial.print("Distance IR droite : ");
-    Serial.println(ROBUS_ReadIR(2));
+      Serial.println(SONAR_GetRange(0));
+      Serial.print("Distance IR droite : ");
+      Serial.println(ROBUS_ReadIR(2));
     Serial.print("Distance IR gauche : ");
     Serial.println(ROBUS_ReadIR(3));
     Serial.println("--------------------------");
@@ -143,8 +174,49 @@ void loop()
 }
 
 /* ******************************************************************FONCTIONS PERSONNELLES************************************************** */
+void detectionObjet()
+{
+    // grab blocks!
+  pixy.ccc.getBlocks();
+  
+  // If there are detect blocks, print them!
+  if (pixy.ccc.numBlocks)
+  {
+    Serial.println("Detected ");
+    fromage = 1;
+    VG = 0.1;
+    VD = 0.1;
+  }
+}
+void printit()
+{
+    int i = 0;
+    float x =0;
+    float y =0;
+    float h =0;
+    float w =0;
+    pixy.ccc.getBlocks();
+      if (pixy.ccc.numBlocks)
+      {
+          for ( i=0; i<pixy.ccc.numBlocks; i++)
+          {
+            w = pixy.ccc.blocks[i].m_width;
+            h = pixy.ccc.blocks[i].m_height;
+            x = pixy.ccc.blocks[i].m_x;
+            y = pixy.ccc.blocks[i].m_y;
+          }
+          Serial.print(" x: ");
+        Serial.print(x);
+        Serial.print(" y: ");
+        Serial.print(y);
+        Serial.print(" w: ");
+        Serial.print(w);
+        Serial.print(" H: ");
+        Serial.println(h);
+      }
+}
 //Fonction de communication avec pixy pour se centrer sur l'objet
-/*void centrerObjet()
+void centrerObjet()
 {
     int i = 0;
     float x =0;
@@ -166,58 +238,72 @@ void loop()
       while(h < minH && go == 0)//--------------------------------Si l'objet est trop loin
       {
         delay(10);
-        if(h < minH)                              // Si trop loin
+        while(h < minH && h > 5)                              // Si trop loin
         {                                         
           Serial.print("Avancer, h: ");   
-          Serial.println(h);    
-          MOTOR_SetSpeed(RIGHT, 0.1);             // Avance
-          MOTOR_SetSpeed(LEFT,  0.1);             
+          Serial.println(h);
+          ActionSuiveur();
+          pixy.ccc.getBlocks();
+          if (pixy.ccc.numBlocks)
+          {
+            for (i=0; i<pixy.ccc.numBlocks; i++)
+            {
+              h = pixy.ccc.blocks[i].m_height;
+            }
+          }             
         }
-        else if(h > maxH)                         // Si trop proche
+        while(h > maxH)                         // Si trop proche
         {                                         
           Serial.print("Reculer, h: ");   
           Serial.println(h);    
           MOTOR_SetSpeed(RIGHT, -0.1);            // Recule
           MOTOR_SetSpeed(LEFT,  -0.1);             
-        }
-        else
-        {
-          Serial.print("Arrêt, h: ");   
-          Serial.println(h);
-          MOTOR_SetSpeed(RIGHT, 0);               // Arrêt
-          MOTOR_SetSpeed(LEFT,  0);  
-        }
-        pixy.ccc.getBlocks();
-        if (pixy.ccc.numBlocks)
-        {
+          pixy.ccc.getBlocks();
+          if (pixy.ccc.numBlocks)
+          {
             for (i=0; i<pixy.ccc.numBlocks; i++)
             {
               h = pixy.ccc.blocks[i].m_height;
             }
+          }   
         }
+          pixy.ccc.getBlocks();
+          if (pixy.ccc.numBlocks)
+          {
+            for (i=0; i<pixy.ccc.numBlocks; i++)
+            {
+              h = pixy.ccc.blocks[i].m_height;
+            }
+          }
       }
     }
+    EnregistrerDistance();
     if(go == 0)
     {
       while(x > minX &&  x <maxX && go == 0)//--------------------------------Si l'objet est centré!!!
       {
-
+          
           MOTOR_SetSpeed(RIGHT, 0);
           MOTOR_SetSpeed(LEFT, 0);
           Serial.println("Arrêt");
           delay(1000);
           Serial1.write('1');
           Serial1.write('2');
+          delay(7000);
           Serial.print("height ");
           Serial.print(h);
           Serial.print(" widht ");
           Serial.println(w);
           Serial.println("b1");
+          virage2moteurs(180,RIGHT, 0);
+          RevenirLabi();
+          Serial1.write('3');
           go =1;
       }
     }
     if(go == 0)
     {
+      float tourne = 0.05;
       while(x < minX || x >maxX)//--------------------------------Si l'objet est pas centré.....
       {
         delay(10);
@@ -227,10 +313,9 @@ void loop()
           Serial.print(x);
           Serial.print(" minX: ");   
           Serial.println(minX);
-          MOTOR_SetSpeed(RIGHT, -0.1);            // Tourne à droite
-          MOTOR_SetSpeed(LEFT, 0.1);
+          MOTOR_SetSpeed(RIGHT, tourne);            // Tourne à droite
+          MOTOR_SetSpeed(LEFT, -tourne);
           whichDirection = 0;
-
         }
         else if (x > maxX)                                  // Si trop à droite
         {
@@ -238,10 +323,9 @@ void loop()
           Serial.print(x);
           Serial.print(" maxX: ");   
           Serial.println(maxX);
-          MOTOR_SetSpeed(RIGHT, 0.1);            // Tourne à gauche
-          MOTOR_SetSpeed(LEFT,   -0.1);
+          MOTOR_SetSpeed(RIGHT, -tourne);            // Tourne à gauche
+          MOTOR_SetSpeed(LEFT,   tourne);
           whichDirection = 1;
-    
         }
         else
         {
@@ -275,21 +359,25 @@ void loop()
     {
       while(x > minX &&  x <maxX && go ==0)//--------------------------------Si l'objet est centré!!!
       {
+          
           MOTOR_SetSpeed(RIGHT, 0);
           MOTOR_SetSpeed(LEFT, 0);
           Serial.println("Arrêt");
           delay(1000);
-          Serial1.write('1');
           Serial1.write('2');
+          delay(7000);
           Serial.print("height: ");
           Serial.print(h);
           Serial.print(", widht: ");
           Serial.println(w);
           Serial.println("b2");
+          virage2moteurs(180,RIGHT, 0);
+          RevenirLabi();
+          Serial1.write('3');
           go =1;
       }
     }
-}*/
+}
 
 //Fonction permettant de faire le chemin inverse
 void RevenirLabi(){
@@ -303,7 +391,6 @@ void RevenirLabi(){
       if(i != 0){
         ActionSuiveurDist(DISTAPVIRAGE);
       }
-      delay(1000);
     }
 
     //Si i est impair, c'est un virage
@@ -314,7 +401,6 @@ void RevenirLabi(){
         Serial.println(" donc j'effectue un virage a gauche.");
         virage2moteurs(90, LEFT, opti90LEFT2);
         ActionSuiveurDist(DISTAVVIRAGE);
-        delay(1000);
       }
 
       else if(deplacementLabi[i] == AVANT){
@@ -361,7 +447,6 @@ void EnregistrerDistance(){
   etape ++;
 }
 
-//Fonction de prise de decision du robot et de lenregistrement de cette position.
 int EnregistrerVirage(){
   Serial.print("Etape ");
   Serial.print(etape);
@@ -369,21 +454,25 @@ int EnregistrerVirage(){
   Serial.print(deplacementLabi[etape]);
   Serial.print(" Effecue --> ");
 
-  if(deplacementLabi[etape] == 0)
+  if(deplacementLabi[etape] == 0 && fromage == 0)
   {
   //Test d'abord sil peut tourner a droite
     if(distanceIR(2) == 1){
       Serial.println("Virage a droite");
       virage2moteurs(90, RIGHT, opti90RIGHT2);
       deplacementLabi[etape] = DROITE;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
   
   //Test s'il peut aller tout droit
     else if(distanceSO(0) == 0){
       Serial.println("Aller tout droit");
       deplacementLabi[etape] = AVANT;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
 
   //Test s'il peut tourner a gauche
@@ -391,30 +480,38 @@ int EnregistrerVirage(){
       Serial.println("Virage a gauche");
       virage2moteurs(90, LEFT, opti90LEFT2);
       deplacementLabi[etape] = GAUCHE;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
   }
 
   //Si la valeur attitrer a la case du virage est 1, 2 ou 3
   //Le robot a alors deja effectuer des virages a partir de la meme intersection
-  else if(deplacementLabi[etape] == 1 || deplacementLabi[etape] == 2 || deplacementLabi[etape] == 3)
+  else if(deplacementLabi[etape] == 1 || deplacementLabi[etape] == 2 || deplacementLabi[etape] == 3 && fromage == 0)
   {
     if(distanceIR(2) == 1){
       Serial.println("Virage a droite 2");
       virage2moteurs(90, RIGHT, opti90RIGHT2);
       deplacementLabi[etape] += 1;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
     else if(distanceSO(0) == 1){
       Serial.println("Aller tout droit 2");
       deplacementLabi[etape] += 2;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
     else if(distanceIR(3) == 1){
       Serial.println("Virage a gauche 2");
       virage2moteurs(90, LEFT, opti90LEFT2);
       deplacementLabi[etape] += 3;
-      ActionSuiveurDist(DISTAPVIRAGE);
+      detectionObjet();
+      if(fromage == 0)
+        ActionSuiveurDist(DISTAPVIRAGE);
     }
   }
   etape ++;
@@ -547,8 +644,9 @@ long int ActionSuiveurDist(float distance){
 
 //Fonction qui envoie les correction moteurs pour que le robot suive la ligne pour une distance indeterminee
 float ActionSuiveur(){
+  int facteurFonctionSuiveur = 0.002;
   //Noir = 1 et blanc = 0
-  float correctionMinime = 0.04, correctionImportante = 0.07;
+  float correctionMinime = 0.04, correctionImportante = 0.06;
   UpdateSuiveur();
 
 
@@ -559,9 +657,11 @@ float ActionSuiveur(){
     //Serial.println("Correction gauche");
     MOTOR_SetSpeed(RIGHT, VD + correctionMinime);
     MOTOR_SetSpeed(LEFT, VG);
-    //correctionMinime -= 0.002;
+    if(correctionMinime > 0.005){
+     correctionMinime -= facteurFonctionSuiveur;
     //Serial.println(correctionMinime * 1000);
     //delay(50);
+    }
   }
 
   //Correction a gauche importante
@@ -571,9 +671,11 @@ float ActionSuiveur(){
     //Serial.println("Correction gauche importante");
     MOTOR_SetSpeed(RIGHT, VD + correctionImportante);
     MOTOR_SetSpeed(LEFT, VG);
-    //correctionImportante -= 0.002;
-    //Serial.println(correctionImportante * 1000);
+    if(correctionImportante > 0.005){
+     correctionImportante -= facteurFonctionSuiveur;
+    //Serial.println(correctionMinime * 1000);
     //delay(50);
+    }
   }
   
   //Correction a droite minime
@@ -583,9 +685,11 @@ float ActionSuiveur(){
     //Serial.println("Correction droite");
     MOTOR_SetSpeed(RIGHT, VD);
     MOTOR_SetSpeed(LEFT, VG + correctionMinime);
-    //correctionMinime -= 0.002;
+    if(correctionMinime > 0.005){
+     correctionMinime -= facteurFonctionSuiveur;
     //Serial.println(correctionMinime * 1000);
     //delay(50);
+    }
   }
 
   //Correction a droite importante
@@ -595,9 +699,11 @@ float ActionSuiveur(){
     //Serial.println("Correction importante droite");
     MOTOR_SetSpeed(RIGHT, VD);
     MOTOR_SetSpeed(LEFT, VG + correctionImportante);
-    //correctionImportante -= 0.002;
-    //Serial.println(correctionImportante * 1000);
+    if(correctionImportante > 0.01){
+     correctionImportante -= facteurFonctionSuiveur;
+    //Serial.println(correctionMinime * 1000);
     //delay(50);
+    }
   }
   else if(memcmp(tableauSuiveur, "00000", 5 ) == 0|| memcmp(tableauSuiveur, "01000", 5 ) == 0|| memcmp(tableauSuiveur, "00100", 5 ) == 0|| memcmp(tableauSuiveur, "00010", 5 ) == 0){
     //Serial.println("Garder les meme vitesses");
